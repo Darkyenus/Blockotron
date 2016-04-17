@@ -1,7 +1,10 @@
 package darkyenus.blockotron.world.generator;
 
+import darkyenus.blockotron.world.Chunk;
+
 /**
  *
  */
-public class WorldGenerator {
+public interface WorldGenerator {
+    void generateChunk(Chunk chunk);
 }

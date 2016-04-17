@@ -24,12 +24,15 @@ public class Game extends com.badlogic.gdx.Game {
 
     @Override
     public void setScreen(com.badlogic.gdx.Screen screen) {
-        super.setScreen(screen);
+        if(screen instanceof Screen){
+            ((Screen) screen).game = this;
+        }
         if(screen instanceof InputProcessor){
             Gdx.input.setInputProcessor((InputProcessor) screen);
         } else {
             Gdx.input.setInputProcessor(null);
         }
+        super.setScreen(screen);
     }
 
     @Override

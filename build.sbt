@@ -4,7 +4,7 @@ version := "0.0-SNAPSHOT"
 
 organization := "darkyenus.blockotron"
 
-javacOptions ++= Seq("-source","1.8","-target","1.8","-encoding","UTF-8")
+javacOptions ++= Seq("-source","1.8","-target","1.8","-encoding","UTF-8","-g")
 
 val gdxVersion = "1.9.2"
 

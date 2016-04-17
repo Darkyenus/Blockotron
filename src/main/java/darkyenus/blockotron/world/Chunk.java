@@ -14,6 +14,7 @@ public final class Chunk {
 
     public final World world;
     public final int x, y;
+    public boolean loaded = false;
     /** Blocks in 1d array for performance. X changes fastest, then Y then Z. Does not contain any null. */
     private final Block[] blocks = new Block[CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT];
 
@@ -41,8 +42,32 @@ public final class Chunk {
         final Block old = blocks[coord];
         blocks[coord] = block;
 
-        for (World.WorldObserver observer : world.observers()) {
-            observer.chunkChanged(this, !old.dynamic || !block.dynamic);
+        if(loaded) {
+            for (World.WorldObserver observer : world.observers()) {
+                observer.chunkChanged(this, !old.dynamic || !block.dynamic);
+            }
         }
+    }
+
+    public void forEachBlock(BlockIterator iterator){
+        int i = 0;
+        for (Block block : blocks) {
+            iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, block);
+            i++;
+        }
+    }
+
+    public void forEachNonAirBlock(BlockIterator iterator){
+        int i = 0;
+        for (Block block : blocks) {
+            if (block != Air.AIR) {
+                iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, block);
+            }
+            i++;
+        }
+    }
+
+    public interface BlockIterator {
+        void block(int cX, int cY, int cZ, Block block);
     }
 }

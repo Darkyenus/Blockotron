@@ -24,7 +24,7 @@ public class MenuScreen extends StageScreen {
         createWorld.addListener(new ClickListener(){
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                //TODO
+                game.setScreen(new GameScreen());
             }
         });
         table.add(createWorld);

@@ -28,6 +28,7 @@ public class World {
         if(existing == null){
             final Chunk newChunk = chunkProvider.getChunk(x, y);
             chunks.put(key, newChunk);
+            newChunk.loaded = true;
             for (WorldObserver observer : observers()) {
                 observer.chunkLoaded(newChunk);
             }
@@ -38,6 +39,7 @@ public class World {
     }
 
     public void addObserver(WorldObserver observer){
+        observer.initialize(this);
         observers.add(observer);
     }
 
@@ -46,8 +48,9 @@ public class World {
     }
 
     public interface WorldObserver {
-        default void chunkLoaded(Chunk chunk){}
-        default void chunkChanged(Chunk chunk, boolean staticBlocks){}
-        default void chunkUnloaded(Chunk chunk){}
+        void initialize(World world);
+        void chunkLoaded(Chunk chunk);
+        void chunkChanged(Chunk chunk, boolean staticBlocks);
+        void chunkUnloaded(Chunk chunk);
     }
 }

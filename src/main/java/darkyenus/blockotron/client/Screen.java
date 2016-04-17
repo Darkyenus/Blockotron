@@ -7,6 +7,8 @@ import com.badlogic.gdx.InputProcessor;
  */
 public abstract class Screen implements com.badlogic.gdx.Screen, InputProcessor {
 
+    protected Game game;
+
     @Override
     public boolean keyDown(int keycode) {
         return false;
