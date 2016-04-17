@@ -1,0 +1,33 @@
+package darkyenus.blockotron.client;
+
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+
+/**
+ *
+ */
+public class MenuScreen extends StageScreen {
+
+    @Override
+    public void createStage() {
+        final Table table = new Table();
+        table.setFillParent(true);
+        table.center();
+
+        final BitmapFont debugFont = new BitmapFont();
+        final TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
+        style.font = debugFont;
+        final TextButton createWorld = new TextButton("Create world", style);
+        createWorld.addListener(new ClickListener(){
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                //TODO
+            }
+        });
+        table.add(createWorld);
+        stage.addActor(table);
+    }
+}
