@@ -143,9 +143,13 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             boundingBox.max.set(boundingBox.min).add(Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_HEIGHT);
 
             staticOpaque = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, 2 << 12);
+            staticOpaque.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
             staticTransparent = new RectangleMeshBatch(true, BlockFaces.transparentMaterial, 2 << 8);
+            staticTransparent.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
             dynamicOpaque = new RectangleMeshBatch(false, BlockFaces.opaqueMaterial, 2 << 8);
+            dynamicOpaque.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
             dynamicTransparent = new RectangleMeshBatch(false, BlockFaces.transparentMaterial, 2 << 8);
+            dynamicTransparent.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
         }
 
         private void dispose(){
@@ -156,15 +160,13 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         }
 
         private void rebuildStaticMesh(){
-            final int xOff = chunk.x * Chunk.CHUNK_SIZE;
-            final int yOff = chunk.y * Chunk.CHUNK_SIZE;
             final RectangleMeshBatch staticOpaque = this.staticOpaque;
             final RectangleMeshBatch staticTransparent = this.staticTransparent;
             staticOpaque.begin();
             staticTransparent.begin();
             int[] blocks = {0};
             chunk.forEachStaticNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.transparent ? staticTransparent : staticOpaque);
+                block.render(cX, cY, cZ, occlusion, block.transparent ? staticTransparent : staticOpaque);
                 blocks[0]++;
             });
             staticOpaque.end();
@@ -172,15 +174,13 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         }
 
         private void rebuildDynamicMesh(){
-            final int xOff = chunk.x * Chunk.CHUNK_SIZE;
-            final int yOff = chunk.y * Chunk.CHUNK_SIZE;
             final RectangleMeshBatch dynamicOpaque = this.dynamicOpaque;
             final RectangleMeshBatch dynamicTransparent = this.dynamicTransparent;
             dynamicOpaque.begin();
             dynamicTransparent.begin();
             chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {
                 if (!block.dynamic) return;
-                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.transparent ? dynamicTransparent : dynamicOpaque);
+                block.render(cX, cY, cZ, occlusion, block.transparent ? dynamicTransparent : dynamicOpaque);
             });
             dynamicOpaque.end();
             dynamicTransparent.end();

@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 import darkyenus.blockotron.world.Side;
@@ -27,6 +28,7 @@ public class RectangleMeshBatch implements RenderableProvider {
     private final static int vertexSize = 5;
 
     private final Material material;
+    private final Vector3 worldTranslation = new Vector3();
     private float[] vertices;
     /** Max amount of rectangular faces that can fit into the mesh. */
     private int maxFaces;
@@ -45,6 +47,11 @@ public class RectangleMeshBatch implements RenderableProvider {
         mesh = new Mesh(isStatic, facesToVertices(maxFaces), maxIndices, attributes);
         vertices = new float[facesToVertices(maxFaces) * vertexSize];
         mesh.setIndices(getIndices(maxIndices), 0, maxIndices);
+    }
+
+    /** Set the world translation of renderables of this mesh */
+    public void setWorldTranslation(float x, float y, float z){
+        worldTranslation.set(x, y, z);
     }
 
     private static short[] indicesCache;
@@ -165,7 +172,7 @@ public class RectangleMeshBatch implements RenderableProvider {
         final int indices = facesToIndices(faces);
         if(indices == 0)return;
         final Renderable r = pool.obtain();
-        r.worldTransform.idt();
+        r.worldTransform.setToTranslation(worldTranslation);
         r.meshPart.mesh = mesh;
         r.meshPart.offset = 0;
         r.meshPart.primitiveType = GL20.GL_TRIANGLES;
