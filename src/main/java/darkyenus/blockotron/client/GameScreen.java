@@ -40,9 +40,4 @@ public class GameScreen extends Screen {
         controller.update(delta);
         renderer.render();
     }
-
-    @Override
-    public void resize(int width, int height) {
-        renderer.resize(width, height);
-    }
 }

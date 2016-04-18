@@ -7,8 +7,8 @@ import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
-import com.badlogic.gdx.utils.*;
-import darkyenus.blockotron.world.Chunk;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Pool;
 import darkyenus.blockotron.world.Side;
 
 /**
@@ -16,44 +16,40 @@ import darkyenus.blockotron.world.Side;
  */
 public class BlockMesh implements RenderableProvider {
 
-    private final static VertexAttributes attributes = new VertexAttributes(VertexAttribute.Position(), VertexAttribute.TexCoords(0));
-    private final static int stride = attributes.vertexSize / 4;
-
-    private final Chunk chunk;
+    private final static VertexAttributes attributes = new VertexAttributes(
+            VertexAttribute.Position(),//3
+            VertexAttribute.TexCoords(0)//2
+    );
+    private final static int vertexSize = 5;
 
     private final Material material;
-    private FloatArray vertices = new FloatArray();
-    private ShortArray indices = new ShortArray();
+    private float[] vertices;
+    private int maxFaces;
+    private int faces = 0;
     private Mesh mesh;
 
-    private static void ensureCapacity(FloatArray array, int additional){
-        int minSize = array.size + additional;
-        if(minSize > array.items.length){
-            int newSize = array.items.length << 1;
-            while(newSize < minSize){
-                newSize <<= 1;
-            }
-            array.ensureCapacity(newSize - array.size);
-        }
-    }
 
-    private static void ensureCapacity(ShortArray array, int additional){
-        int minSize = array.size + additional;
-        if(minSize > array.items.length){
-            int newSize = array.items.length << 1;
-            while(newSize < minSize){
-                newSize <<= 1;
-            }
-            array.ensureCapacity(newSize - array.size);
-        }
-    }
-
-    public BlockMesh(Chunk chunk, boolean isStatic, Material material, int maxFaces) {
-        this.chunk = chunk;
+    public BlockMesh(boolean isStatic, Material material, int maxFaces) {
         this.material = material;
+        this.maxFaces = maxFaces;
         mesh = new Mesh(isStatic, facesToVertices(maxFaces), facesToIndices(maxFaces), attributes);
-        vertices.ensureCapacity(facesToVertices(maxFaces) * 5);
-        indices.ensureCapacity(facesToIndices(maxFaces));
+        vertices = new float[facesToVertices(maxFaces) * vertexSize];
+        regenerateIndices();
+    }
+
+    private void regenerateIndices(){
+        int len = maxFaces * 6;
+        short[] indices = new short[len];
+        short j = 0;
+        for (int i = 0; i < len; i += 6, j += 4) {
+            indices[i] = j;
+            indices[i + 1] = (short)(j + 1);
+            indices[i + 2] = (short)(j + 2);
+            indices[i + 3] = (short)(j + 2);
+            indices[i + 4] = (short)(j + 3);
+            indices[i + 5] = j;
+        }
+        mesh.setIndices(indices);
     }
 
     private static int facesToVertices(int faces){
@@ -65,8 +61,7 @@ public class BlockMesh implements RenderableProvider {
     }
 
     public void begin(){
-        vertices.clear();
-        indices.clear();
+        faces = 0;
     }
 
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture texture){
@@ -88,27 +83,13 @@ public class BlockMesh implements RenderableProvider {
     }
 
     public void createBlockFace (int x, int y, int z, float[] faceOffsets, BlockFaceTexture texture){
+        if(faces == maxFaces){
+            return;
+        }
+
         //Vertices
-        final FloatArray vertices = this.vertices;
-        ensureCapacity(vertices, stride << 2);
-        int vertexOffset = vertices.size;
-        vertices.size += 4 * stride;
-        final float[] v = vertices.items;
-
-        //Indices
-        final ShortArray indices = this.indices;
-        ensureCapacity(indices, 6);
-        int indexOffset = indices.size;
-        indices.size += 6;
-        final short[] i = indices.items;
-
-        //Fill indices
-        i[indexOffset++] = (short) vertexOffset;
-        i[indexOffset++] = (short) (vertexOffset + 1);
-        i[indexOffset++] = (short) (vertexOffset + 2);
-        i[indexOffset++] = (short) (vertexOffset + 2);
-        i[indexOffset++] = (short) (vertexOffset + 3);
-        i[indexOffset] = (short) vertexOffset;
+        int vertexOffset = facesToVertices(faces) * vertexSize;
+        final float[] v = vertices;
 
         //Fill vertices
         int faceOffset = 0;
@@ -135,22 +116,22 @@ public class BlockMesh implements RenderableProvider {
         v[vertexOffset++] = z + faceOffsets[faceOffset];
         v[vertexOffset++] = texture.u;
         v[vertexOffset] = texture.v2;
+
+        faces++;
     }
 
     public void end(){
-        if ((mesh.getMaxVertices() * stride) < vertices.size)
-            throw new GdxRuntimeException("Mesh can't hold enough vertices: " + mesh.getMaxVertices() + " * " + stride + " < "
-                    + vertices.size);
-        if (mesh.getMaxIndices() < indices.size)
-            throw new GdxRuntimeException("Mesh can't hold enough indices: " + mesh.getMaxIndices() + " < " + indices.size);
+        final int verticesSize = facesToVertices(faces) * 6;
 
-        mesh.setVertices(vertices.items, 0, vertices.size);
-        mesh.setIndices(indices.items, 0, indices.size);
+        assert verticesSize <= vertices.length : "Somehow generated more vertices than can fit: "+verticesSize+" > "+vertices.length;
+        assert (mesh.getMaxVertices() * vertexSize) >= verticesSize : "Mesh can't hold enough vertices: " + mesh.getMaxVertices() + " * " + vertexSize + " < " + verticesSize;
+
+        mesh.setVertices(vertices, 0, verticesSize);
     }
 
     @Override
     public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
-        final int indices = mesh.getNumIndices();
+        final int indices = facesToIndices(faces);
         if(indices == 0)return;
         final Renderable r = pool.obtain();
         r.meshPart.mesh = mesh;

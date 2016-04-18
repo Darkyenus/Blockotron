@@ -1,5 +1,6 @@
 package darkyenus.blockotron.render;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.*;
 import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
@@ -27,8 +28,11 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
 
     public final PerspectiveCamera camera = new PerspectiveCamera();{
         camera.fieldOfView = 75;
+        camera.up.set(0,0,1);
         camera.near = 0.1f;
-        camera.far = 256f;//View distance
+        camera.far = 128f;//View distance
+        camera.position.set(0, 0, 30);
+        camera.direction.set(1, 0, 0);
     }
     private final Viewport viewport = new ExtendViewport(100f, 100f, camera);
 
@@ -36,10 +40,10 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
     {
         final DefaultShader.Config config = new DefaultShader.Config();
         config.defaultCullFace = 0;//GL20.GL_BACK;
-        config.numBones = 1;
-        config.numDirectionalLights = 1;
-        config.numPointLights = 1;
-        config.numSpotLights = 1;
+        config.numBones = 0;
+        config.numDirectionalLights = 2;
+        config.numPointLights = 0;
+        config.numSpotLights = 0;
         final DefaultShaderProvider defaultShaderProvider = new DefaultShaderProvider(config);
         modelBatch = new ModelBatch(defaultShaderProvider);
     }
@@ -55,20 +59,16 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
 
 
     private static final Texture texture = new Texture("block.png");
-    private static final Material opaqueMaterial = new Material("blockOpaque", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(texture));
-    private static final Material transparentMaterial = new Material("blockTransparent", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(texture), new BlendingAttribute());
+    private static final Material opaqueMaterial = new Material("blockOpaque", TextureAttribute.createDiffuse(texture));
+    private static final Material transparentMaterial = new Material("blockTransparent", TextureAttribute.createDiffuse(texture), new BlendingAttribute());
 
     public void setCamera(Vector3 newPosition, Vector3 newDirection){
         camera.position.set(newPosition);
         camera.direction.set(newDirection);
     }
 
-    public void resize(int width, int height){
-        viewport.setScreenSize(width, height);
-    }
-
     public void render(){
-        viewport.apply();
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         modelBatch.begin(camera);
         modelBatch.render(this, environment);
         modelBatch.end();
@@ -101,7 +101,7 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
     public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
         int cameraChunkX = MathUtils.round(camera.position.x / Chunk.CHUNK_SIZE);
         int cameraChunkY = MathUtils.round(camera.position.y / Chunk.CHUNK_SIZE);
-        int viewDistanceChunks = 2;//MathUtils.ceilPositive(camera.far / Chunk.CHUNK_SIZE);
+        int viewDistanceChunks = MathUtils.ceilPositive(camera.far / Chunk.CHUNK_SIZE);
         final Frustum frustum = camera.frustum;
 
         for (int x = cameraChunkX - viewDistanceChunks; x < cameraChunkX + viewDistanceChunks; x++) {
@@ -136,10 +136,10 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             boundingBox.min.set(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
             boundingBox.max.set(boundingBox.min).add(Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_HEIGHT);
 
-            staticOpaque = new BlockMesh(chunk, true, opaqueMaterial, 2 << 12);
-            staticTransparent = new BlockMesh(chunk, true, transparentMaterial, 2 << 8);
-            dynamicOpaque = new BlockMesh(chunk, false, opaqueMaterial, 2 << 8);
-            dynamicTransparent = new BlockMesh(chunk, false, transparentMaterial, 2 << 8);
+            staticOpaque = new BlockMesh(true, opaqueMaterial, 2 << 12);
+            staticTransparent = new BlockMesh(true, transparentMaterial, 2 << 8);
+            dynamicOpaque = new BlockMesh(false, opaqueMaterial, 2 << 8);
+            dynamicTransparent = new BlockMesh(false, transparentMaterial, 2 << 8);
         }
 
         private void dispose(){
