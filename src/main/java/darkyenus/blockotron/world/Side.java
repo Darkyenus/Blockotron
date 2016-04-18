@@ -1,10 +1,9 @@
 package darkyenus.blockotron.world;
 
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 
 /**
- *
+ * Enum of block sides and, as reinterpretation, directions.
  */
 public enum Side {
     EAST(1, 0, 0),
@@ -12,10 +11,12 @@ public enum Side {
     NORTH(0, 1, 0),
     SOUTH(0, -1, 0),
     TOP(0, 0, 1),
-    BOTTOM(0, 0, -1),
-    ;
+    BOTTOM(0, 0, -1);
 
+    /** Unique bit flag of this direction.
+     * @see Side#east and similar for faster access. */
     public final byte flag;
+    /** -1, 0 or 1 of this direction in given dimension. */
     public final int offX, offY, offZ;
 
     Side(int offX, int offY, int offZ) {
@@ -26,17 +27,20 @@ public enum Side {
     }
 
     /** Return direction of normalized vector or null if invalid. */
-    public static Side matchDirection(Vector3 of){
-        int x = MathUtils.round(of.x);
-        int y = MathUtils.round(of.y);
-        int z = MathUtils.round(of.z);
+    public static Side matchDirection(Vector3 of) {
+        float max = Float.NEGATIVE_INFINITY;
+        Side closestSide = null;
         for (Side side : values()) {
-            if(side.offX == x && side.offY == y && side.offZ == z) return side;
+            final float dot = of.dot(side.offX, side.offY, side.offZ);
+            if(dot > max){
+                max = dot;
+                closestSide = side;
+            }
         }
-        return null;
+        return closestSide;
     }
 
-    // Optimized access to Side.flag (can be inlined by compiler)
+    /** Shortcut access to {@link Side#flag}. (can be inlined by the compiler) */
     public static final byte east =     1;
     public static final byte west =     1 << 1;
     public static final byte north =    1 << 2;
@@ -44,6 +48,7 @@ public enum Side {
     public static final byte top =      1 << 4;
     public static final byte bottom =   1 << 5;
 
+    /** Convert mask from {@link Side#flag}s to debug string. */
     public static String sideMaskToString(byte sideMask){
         if((sideMask & 0b111111) == 0)return "[]";
         final StringBuilder sb = new StringBuilder();
