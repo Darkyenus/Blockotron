@@ -89,6 +89,7 @@ public class World {
 
     private final RayCastResult getBlockOnRay_TMP = new RayCastResult();
 	public RayCastResult getBlockOnRay (Vector3 origin, Vector3 direction, float maxDistance, BlockFilter filter) {
+        // http://gamedev.stackexchange.com/questions/47362/cast-ray-to-select-block-in-voxel-game
         /* Algorithm derived from:
          * https://github.com/kpreid/cubes/blob/c5e61fa22cb7f9ba03cd9f22e5327d738ec93969/world.js#L307
          * Copyright 2011-2012 Kevin Reid under the terms of the MIT License <http://opensource.org/licenses/MIT>

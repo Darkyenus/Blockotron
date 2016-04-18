@@ -79,6 +79,20 @@ public class GameScreen extends Screen {
                 sb.append("   Y: ").append(blockOnRay.getY()).append('\n');
                 sb.append("   Z: ").append(blockOnRay.getZ()).append('\n');
                 sb.append(" Side: ").append(blockOnRay.getSide()).append('\n');
+                final byte occlusionMask = world.getChunk(World.outerChunkCoordinate(blockOnRay.getX()), World.outerChunkCoordinate(blockOnRay.getY()))
+                        .getOcclusionMask(
+                                World.innerChunkCoordinateXY(blockOnRay.getX()),
+                                World.innerChunkCoordinateXY(blockOnRay.getY()),
+                                World.innerChunkCoordinateZ(blockOnRay.getZ()));
+                if(occlusionMask != 0){
+                    sb.append(" Occluded from: ");
+                    for (Side side : Side.values()) {
+                        if((occlusionMask & side.flag) != 0){
+                            sb.append(side).append(" ");
+                        }
+                    }
+                    sb.append('\n');
+                }
             }
 
             batch.begin();

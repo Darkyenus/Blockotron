@@ -43,4 +43,31 @@ public enum Side {
     public static final byte south =    1 << 3;
     public static final byte top =      1 << 4;
     public static final byte bottom =   1 << 5;
+
+    public static String sideMaskToString(byte sideMask){
+        if((sideMask & 0b111111) == 0)return "[]";
+        final StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        if((sideMask & east) != 0){
+            sb.append("EAST, ");
+        }
+        if((sideMask & west) != 0){
+            sb.append("WEST, ");
+        }
+        if((sideMask & north) != 0){
+            sb.append("NORTH, ");
+        }
+        if((sideMask & south) != 0){
+            sb.append("SOUTH, ");
+        }
+        if((sideMask & top) != 0){
+            sb.append("TOP, ");
+        }
+        if((sideMask & bottom) != 0){
+            sb.append("BOTTOM, ");
+        }
+        sb.setLength(sb.length() - 2);
+        sb.append(']');
+        return sb.toString();
+    }
 }

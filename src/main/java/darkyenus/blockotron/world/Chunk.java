@@ -41,6 +41,10 @@ public final class Chunk {
         return blocks[coord(x, y, z)];
     }
 
+    public byte getOcclusionMask(int x, int y, int z){
+        return occlusion[coord(x, y, z)];
+    }
+
     public void setBlock(int x, int y, int z, Block block) {
         final Block[] blocks = this.blocks;
         final int coord = coord(x, y, z);
