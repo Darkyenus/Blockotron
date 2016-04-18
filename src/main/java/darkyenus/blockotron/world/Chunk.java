@@ -1,7 +1,5 @@
 package darkyenus.blockotron.world;
 
-import darkyenus.blockotron.world.blocks.Air;
-
 import java.util.Arrays;
 
 /**
@@ -27,7 +25,7 @@ public final class Chunk {
         this.world = world;
         this.x = x;
         this.y = y;
-        Arrays.fill(blocks, Air.AIR);
+        Arrays.fill(blocks, Block.AIR);
     }
 
     /** Maps chunk-local coordinates to unique int key. */
@@ -52,8 +50,8 @@ public final class Chunk {
         blocks[coord] = block;
 
         //Update iterator hints
-        if(block != Air.AIR) {
-            if (block.dynamic) {
+        if(block != Block.AIR) {
+            if (block.isDynamic()) {
                 expandDynamicIterationHint(coord);
             } else {
                 expandStaticIterationHint(coord);
@@ -62,7 +60,7 @@ public final class Chunk {
 
         final byte[] occlusion = this.occlusion;
         //Update neighbor occlusion masks
-        if(block.transparent){
+        if(block.isTransparent()){
             if(x > 0){
                 occlusion[coord(x-1, y, z)] &= ~Side.east;
             }
@@ -107,7 +105,7 @@ public final class Chunk {
 
         if(loaded) {
             for (World.WorldObserver observer : world.observers()) {
-                observer.chunkChanged(this, !old.dynamic || !block.dynamic);
+                observer.chunkChanged(this, !old.isDynamic() || !block.isDynamic());
             }
         }
     }
@@ -115,32 +113,32 @@ public final class Chunk {
     private void updateSelfOcclusion(int x, int y, int z){
         byte selfOcclusion = 0;
         if(x > 0){
-            if(!blocks[coord(x-1, y, z)].transparent){
+            if(!blocks[coord(x - 1, y, z)].isTransparent()){
                 selfOcclusion |= Side.west;
             }
         }
         if(x < CHUNK_SIZE-1){
-            if(!blocks[coord(x+1, y, z)].transparent){
+            if(!blocks[coord(x + 1, y, z)].isTransparent()){
                 selfOcclusion |= Side.east;
             }
         }
         if(y > 0){
-            if(!blocks[coord(x, y-1, z)].transparent){
+            if(!blocks[coord(x, y - 1, z)].isTransparent()){
                 selfOcclusion |= Side.south;
             }
         }
         if(y < CHUNK_SIZE-1){
-            if(!blocks[coord(x, y+1, z)].transparent){
+            if(!blocks[coord(x, y + 1, z)].isTransparent()){
                 selfOcclusion |= Side.north;
             }
         }
         if(z > 0){
-            if(!blocks[coord(x, y, z-1)].transparent){
+            if(!blocks[coord(x, y, z - 1)].isTransparent()){
                 selfOcclusion |= Side.bottom;
             }
         }
         if(z < CHUNK_HEIGHT-1){
-            if(!blocks[coord(x, y, z+1)].transparent){
+            if(!blocks[coord(x, y, z + 1)].isTransparent()){
                 selfOcclusion |= Side.top;
             }
         }
@@ -165,7 +163,7 @@ public final class Chunk {
         no_blocks:{
             for (; i <= max; i++) {
                 final Block block = blocks[i];
-                if (block != Air.AIR && !block.dynamic) {
+                if (block != Block.AIR && !block.isDynamic()) {
                     iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                     staticMin = i;
                     break no_blocks;
@@ -180,7 +178,7 @@ public final class Chunk {
         i++;//Advance so we don't iterate twice over the same block
         for (; i <= max; i++) {
             final Block block = blocks[i];
-            if (block != Air.AIR && !block.dynamic) {
+            if (block != Block.AIR && !block.isDynamic()) {
                 iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                 currentMax = i;
             }
@@ -196,7 +194,7 @@ public final class Chunk {
         no_blocks:{
             for (; i <= max; i++) {
                 final Block block = blocks[i];
-                if (block != Air.AIR && block.dynamic) {
+                if (block != Block.AIR && block.isDynamic()) {
                     iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                     dynamicMin = i;
                     break no_blocks;
@@ -211,7 +209,7 @@ public final class Chunk {
         i++;//Advance so we don't iterate twice over the same block
         for (; i <= max; i++) {
             final Block block = blocks[i];
-            if (block != Air.AIR && block.dynamic) {
+            if (block != Block.AIR && block.isDynamic()) {
                 iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                 currentMax = i;
             }

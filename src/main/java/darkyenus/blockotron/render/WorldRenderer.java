@@ -162,7 +162,7 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             staticTransparent.begin();
             int[] blocks = {0};
             chunk.forEachStaticNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.transparent ? staticTransparent : staticOpaque);
+                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.isTransparent() ? staticTransparent : staticOpaque);
                 blocks[0]++;
             });
             staticOpaque.end();
@@ -177,8 +177,8 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             dynamicOpaque.begin();
             dynamicTransparent.begin();
             chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                if (!block.dynamic) return;
-                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.transparent ? dynamicTransparent : dynamicOpaque);
+                if (!block.isDynamic()) return;
+                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.isTransparent() ? dynamicTransparent : dynamicOpaque);
             });
             dynamicOpaque.end();
             dynamicTransparent.end();
