@@ -20,6 +20,6 @@ public class DebugBlock extends Block {
 
     @Override
     public void render(int x, int y, int z, BlockMesh mesh) {
-        mesh.createBlock(x, y, z, Side.top, texture);
+        mesh.createBlock(x, y, z, (byte)-1/*Side.top*/, texture);
     }
 }

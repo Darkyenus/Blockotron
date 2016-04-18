@@ -39,7 +39,7 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
     private final ModelBatch modelBatch;
     {
         final DefaultShader.Config config = new DefaultShader.Config();
-        config.defaultCullFace = 0;//GL20.GL_BACK;
+        config.defaultCullFace = GL20.GL_BACK;
         config.numBones = 0;
         config.numDirectionalLights = 2;
         config.numPointLights = 0;

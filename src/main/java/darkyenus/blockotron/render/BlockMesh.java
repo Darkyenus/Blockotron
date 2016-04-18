@@ -147,44 +147,44 @@ public class BlockMesh implements RenderableProvider {
     }
 
     private static final float[] TOP_OFFSETS = {
-            0, 1, 0,
-            1, 1, 0,
+            0, 0, 1,
+            1, 0, 1,
             1, 1, 1,
             0, 1, 1
     };
 
     private static final float[] BOTTOM_OFFSETS = {
+            0, 1, 0,
+            1, 1, 0,
+            1, 0, 0,
+            0, 0, 0
+    };
+
+    private static final float[] LEFT_OFFSETS = {
+            0, 0, 0,
+            0, 0, 1,
+            0, 1, 1,
+            0, 1, 0
+    };
+
+    private static final float[] RIGHT_OFFSETS = {
+            1, 1, 0,
+            1, 1, 1,
+            1, 0, 1,
+            1, 0, 0
+    };
+
+    private static final float[] FRONT_OFFSETS = {
             0, 0, 0,
             1, 0, 0,
             1, 0, 1,
             0, 0, 1
     };
 
-    private static final float[] LEFT_OFFSETS = {
-            0, 0, 0,
+    private static final float[] BACK_OFFSETS = {
             0, 1, 0,
             0, 1, 1,
-            0, 0, 1
-    };
-
-    private static final float[] RIGHT_OFFSETS = {
-            1, 0, 0,
-            1, 1, 0,
             1, 1, 1,
-            1, 0, 1
-    };
-
-    private static final float[] FRONT_OFFSETS = {
-            0, 0, 0,
-            1, 0, 0,
-            1, 1, 0,
-            0, 1, 0
-    };
-
-    private static final float[] BACK_OFFSETS = {
-            0, 0, 1,
-            0, 1, 1,
-            1, 1, 1,
-            1, 0, 1
+            1, 1, 0
     };
 }
