@@ -1,5 +1,7 @@
 package darkyenus.blockotron.world;
 
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
 
@@ -38,6 +40,114 @@ public class World {
         }
     }
 
+    /** Return loaded chunk at given chunk-coordinates or null of not loaded. */
+    public Chunk getLoadedChunk(int x, int y){
+        return chunks.get(chunkCoordKey(x, y));
+    }
+
+    public static int outerChunkCoordinate(float xy){
+        float c = xy / Chunk.CHUNK_SIZE;
+        return MathUtils.floor(c);
+    }
+
+    public static int innerChunkCoordinateXY(float xy){
+        float c = xy % Chunk.CHUNK_SIZE;
+        if(c < 0)c += Chunk.CHUNK_SIZE;
+        return (int)c;
+    }
+
+    public static int innerChunkCoordinateZ(float z){
+        return (int)z;
+    }
+
+    public Block getLoadedBlock(float x, float y, float z){
+        final Chunk loadedChunk = getLoadedChunk(outerChunkCoordinate(x), outerChunkCoordinate(y));
+        if(loadedChunk == null)return null;
+        final int cx = innerChunkCoordinateXY(x);
+        final int cy = innerChunkCoordinateXY(y);
+        final int cz = innerChunkCoordinateZ(z);
+        if(cz < 0 || cz >= Chunk.CHUNK_HEIGHT) return null;
+        return loadedChunk.getBlock(cx, cy, cz);
+    }
+
+    private static float intbound(float s, float ds) {
+        // Find the smallest positive t such that s+t*ds is an integer.
+        if(ds < 0){
+            s = -s;
+            ds = -ds;
+        }
+        //Positive modulo: s % 1f
+        s = s - MathUtils.floor(s);
+        /*
+        s = s % 1f;
+        if(s < 0){
+            s += 1f;
+        }
+        */
+        return (1f - s)/ds;
+    }
+
+    private final RayCastResult getBlockOnRay_TMP = new RayCastResult();
+	public RayCastResult getBlockOnRay (Vector3 origin, Vector3 direction, float maxDistance, BlockFilter filter) {
+        /* Algorithm derived from:
+         * https://github.com/kpreid/cubes/blob/c5e61fa22cb7f9ba03cd9f22e5327d738ec93969/world.js#L307
+         * Copyright 2011-2012 Kevin Reid under the terms of the MIT License <http://opensource.org/licenses/MIT>
+         * Based on:
+         * "A Fast Voxel Traversal Algorithm for Ray Tracing"
+         * by John Amanatides and Andrew Woo, 1987
+         * <http://www.cse.yorku.ca/~amana/research/grid.pdf>
+         * <http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.3443> */
+
+		float stepX = Math.signum(direction.x);
+		float stepY = Math.signum(direction.y);
+		float stepZ = Math.signum(direction.z);
+		float tDeltaX = stepX / direction.x;
+		float tDeltaY = stepY / direction.y;
+		float tDeltaZ = stepZ / direction.z;
+		float tMaxX = intbound(origin.x, direction.x);
+		float tMaxY = intbound(origin.y, direction.y);
+		float tMaxZ = intbound(origin.z, direction.z);
+
+		float x = MathUtils.floor(origin.x);
+		float y = MathUtils.floor(origin.y);
+		float z = MathUtils.floor(origin.z);
+
+		for (;;) {
+			final Block block = getLoadedBlock(x, y, z);
+			if (block == null) return null;
+			if (filter.accepts(block)) {
+                final RayCastResult result = getBlockOnRay_TMP;
+                result.block = block;
+                result.x = MathUtils.floor(x);
+                result.y = MathUtils.floor(y);
+                result.z = MathUtils.floor(z);
+                return result;
+            }
+
+			if (tMaxX < tMaxY) {
+				if (tMaxX < tMaxZ) {
+                    if(tMaxX > maxDistance) return null;
+					x += stepX;
+					tMaxX += tDeltaX;
+				} else {
+                    if(tMaxZ > maxDistance) return null;
+					z += stepZ;
+					tMaxZ += tDeltaZ;
+				}
+			} else {
+				if (tMaxY < tMaxZ) {
+                    if(tMaxY > maxDistance) return null;
+					y += stepY;
+					tMaxY += tDeltaY;
+				} else {
+                    if(tMaxZ > maxDistance) return null;
+                    z += stepZ;
+                    tMaxZ += tDeltaZ;
+				}
+			}
+		}
+	}
+
     public void addObserver(WorldObserver observer){
         observer.initialize(this);
         observers.add(observer);
@@ -52,5 +162,26 @@ public class World {
         void chunkLoaded(Chunk chunk);
         void chunkChanged(Chunk chunk, boolean staticBlocks);
         void chunkUnloaded(Chunk chunk);
+    }
+
+    public static final class RayCastResult {
+        private Block block;
+        private int x,y,z;
+
+        public Block getBlock() {
+            return block;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public int getZ() {
+            return z;
+        }
     }
 }

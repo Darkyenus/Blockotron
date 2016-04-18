@@ -2,6 +2,7 @@ package darkyenus.blockotron.client;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import darkyenus.blockotron.render.BlockFaces;
 
@@ -13,12 +14,20 @@ import java.io.File;
 public class Game extends com.badlogic.gdx.Game {
 
     private static SpriteBatch uiBatch = null;
+    private static BitmapFont debugFont = null;
 
     public static SpriteBatch uiBatch(){
         if(uiBatch == null){
             uiBatch = new SpriteBatch();
         }
         return uiBatch;
+    }
+
+    public static BitmapFont debugFont(){
+        if(debugFont == null) {
+            debugFont = new BitmapFont();
+        }
+        return debugFont;
     }
 
     @Override

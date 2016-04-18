@@ -47,7 +47,7 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
         config.numPointLights = 0;
         config.numSpotLights = 0;
         final DefaultShaderProvider defaultShaderProvider = new DefaultShaderProvider(config);
-        modelBatch = new ModelBatch(defaultShaderProvider);
+        modelBatch = new ModelBatch(defaultShaderProvider, new BiasedRenderableSorter());
     }
 
     private final Environment environment = new Environment();
@@ -55,6 +55,8 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.9f, 0.9f, 0.9f, 1f));
         environment.add(new DirectionalLight().set(100, 100, 100, 0, -1, 0));
     }
+
+    private final WorldCursorOverlay cursorOverlay = new WorldCursorOverlay();
 
     private World world;
     private final LongMap<ChunkRenderable> renderableChunks = new LongMap<>();
@@ -66,8 +68,13 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
 
     public void render(){
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        cursorOverlay.update(world, camera, 200f);
+
         modelBatch.begin(camera);
-        modelBatch.render(this, environment);
+        {
+            modelBatch.render(this, environment);
+            modelBatch.render(cursorOverlay, environment);
+        }
         modelBatch.end();
     }
 
@@ -154,8 +161,8 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             staticOpaque.begin();
             staticTransparent.begin();
             int[] blocks = {0};
-            chunk.forEachStaticNonAirBlock((cX, cY, cZ, block) -> {
-                block.render(xOff + cX, yOff + cY, cZ, block.transparent ? staticTransparent : staticOpaque);
+            chunk.forEachStaticNonAirBlock((cX, cY, cZ, occlusion, block) -> {
+                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.transparent ? staticTransparent : staticOpaque);
                 blocks[0]++;
             });
             staticOpaque.end();
@@ -169,9 +176,9 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             final BlockMesh dynamicTransparent = this.dynamicTransparent;
             dynamicOpaque.begin();
             dynamicTransparent.begin();
-            chunk.forEachDynamicNonAirBlock((cX, cY, cZ, block) -> {
+            chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {
                 if (!block.dynamic) return;
-                block.render(xOff + cX, yOff + cY, cZ, block.transparent ? dynamicTransparent : dynamicOpaque);
+                block.render(xOff + cX, yOff + cY, cZ, occlusion, block.transparent ? dynamicTransparent : dynamicOpaque);
             });
             dynamicOpaque.end();
             dynamicTransparent.end();

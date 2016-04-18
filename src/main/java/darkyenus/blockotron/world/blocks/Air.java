@@ -15,5 +15,5 @@ public class Air extends Block {
     }
 
     @Override
-    public void render(int x, int y, int z, BlockMesh mesh) {}
+    public void render(int x, int y, int z, byte occlusion, BlockMesh mesh) {}
 }

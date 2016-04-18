@@ -10,13 +10,15 @@ import java.util.Arrays;
 public final class Chunk {
 
     public static final int CHUNK_SIZE = 16;
-    public static final int CHUNK_HEIGHT = 256;
+    public static final int CHUNK_HEIGHT = 128;
 
     public final World world;
     public final int x, y;
     public boolean loaded = false;
     /** Blocks in 1d array for performance. X changes fastest, then Y then Z. Does not contain any null. */
     private final Block[] blocks = new Block[CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT];
+    /** Indices correspond to blocks. For each block, contains which Sides are occluded (= on that side is an opaque block). */
+    private final byte[] occlusion = new byte[blocks.length];
 
     //Iteration hints
     private int dynamicMin = 0, dynamicMax = -1, staticMin = 0, staticMax = -1;
@@ -45,6 +47,7 @@ public final class Chunk {
         final Block old = blocks[coord];
         blocks[coord] = block;
 
+        //Update iterator hints
         if(block != Air.AIR) {
             if (block.dynamic) {
                 expandDynamicIterationHint(coord);
@@ -53,11 +56,91 @@ public final class Chunk {
             }
         }
 
+        final byte[] occlusion = this.occlusion;
+        //Update neighbor occlusion masks
+        if(block.transparent){
+            if(x > 0){
+                occlusion[coord(x-1, y, z)] &= ~Side.right;
+            }
+            if(x < CHUNK_SIZE-1){
+                occlusion[coord(x+1, y, z)] &= ~Side.left;
+            }
+            if(y > 0){
+                occlusion[coord(x, y-1, z)] &= ~Side.back;
+            }
+            if(y < CHUNK_SIZE-1){
+                occlusion[coord(x, y+1, z)] &= ~Side.front;
+            }
+            if(z > 0){
+                occlusion[coord(x, y, z-1)] &= ~Side.top;
+            }
+            if(z < CHUNK_HEIGHT-1){
+                occlusion[coord(x, y, z+1)] &= ~Side.bottom;
+            }
+        } else {
+            if(x > 0){
+                occlusion[coord(x-1, y, z)] |= Side.right;
+            }
+            if(x < CHUNK_SIZE-1){
+                occlusion[coord(x+1, y, z)] |= Side.left;
+            }
+            if(y > 0){
+                occlusion[coord(x, y-1, z)] |= Side.back;
+            }
+            if(y < CHUNK_SIZE-1){
+                occlusion[coord(x, y+1, z)] |= Side.front;
+            }
+            if(z > 0){
+                occlusion[coord(x, y, z-1)] |= Side.top;
+            }
+            if(z < CHUNK_HEIGHT-1){
+                occlusion[coord(x, y, z+1)] |= Side.bottom;
+            }
+        }
+
+        //Update own occlusion mask
+        updateSelfOcclusion(x,y,z);
+
         if(loaded) {
             for (World.WorldObserver observer : world.observers()) {
                 observer.chunkChanged(this, !old.dynamic || !block.dynamic);
             }
         }
+    }
+
+    private void updateSelfOcclusion(int x, int y, int z){
+        byte selfOcclusion = 0;
+        if(x > 0){
+            if(!blocks[coord(x-1, y, z)].transparent){
+                selfOcclusion |= Side.left;
+            }
+        }
+        if(x < CHUNK_SIZE-1){
+            if(!blocks[coord(x+1, y, z)].transparent){
+                selfOcclusion |= Side.right;
+            }
+        }
+        if(y > 0){
+            if(!blocks[coord(x, y-1, z)].transparent){
+                selfOcclusion |= Side.front;
+            }
+        }
+        if(y < CHUNK_SIZE-1){
+            if(!blocks[coord(x, y+1, z)].transparent){
+                selfOcclusion |= Side.back;
+            }
+        }
+        if(z > 0){
+            if(!blocks[coord(x, y, z-1)].transparent){
+                selfOcclusion |= Side.bottom;
+            }
+        }
+        if(z < CHUNK_HEIGHT-1){
+            if(!blocks[coord(x, y, z+1)].transparent){
+                selfOcclusion |= Side.top;
+            }
+        }
+        occlusion[coord(x,y,z)] = selfOcclusion;
     }
 
     private void expandDynamicIterationHint(int key){
@@ -72,13 +155,14 @@ public final class Chunk {
 
     public void forEachStaticNonAirBlock(BlockIterator iterator){
         final Block[] blocks = this.blocks;
+        final byte[] occlusion = this.occlusion;
         int i = staticMin;
         final int max = staticMax;
         no_blocks:{
             for (; i <= max; i++) {
                 final Block block = blocks[i];
                 if (block != Air.AIR && !block.dynamic) {
-                    iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, block);
+                    iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                     staticMin = i;
                     break no_blocks;
                 }
@@ -93,7 +177,7 @@ public final class Chunk {
         for (; i <= max; i++) {
             final Block block = blocks[i];
             if (block != Air.AIR && !block.dynamic) {
-                iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, block);
+                iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                 currentMax = i;
             }
         }
@@ -102,13 +186,14 @@ public final class Chunk {
 
     public void forEachDynamicNonAirBlock(BlockIterator iterator){
         final Block[] blocks = this.blocks;
+        final byte[] occlusion = this.occlusion;
         int i = dynamicMin;
         final int max = dynamicMax;
         no_blocks:{
             for (; i <= max; i++) {
                 final Block block = blocks[i];
                 if (block != Air.AIR && block.dynamic) {
-                    iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, block);
+                    iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                     dynamicMin = i;
                     break no_blocks;
                 }
@@ -123,7 +208,7 @@ public final class Chunk {
         for (; i <= max; i++) {
             final Block block = blocks[i];
             if (block != Air.AIR && block.dynamic) {
-                iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, block);
+                iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                 currentMax = i;
             }
         }
@@ -131,6 +216,6 @@ public final class Chunk {
     }
 
     public interface BlockIterator {
-        void block(int cX, int cY, int cZ, Block block);
+        void block(int cX, int cY, int cZ, byte occlusion, Block block);
     }
 }

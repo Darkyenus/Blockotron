@@ -139,11 +139,13 @@ public class BlockMesh implements RenderableProvider {
         final int indices = facesToIndices(faces);
         if(indices == 0)return;
         final Renderable r = pool.obtain();
+        r.worldTransform.idt();
         r.meshPart.mesh = mesh;
         r.meshPart.offset = 0;
         r.meshPart.primitiveType = GL20.GL_TRIANGLES;
         r.meshPart.size = indices;
         r.material = material;
+        r.userData = null;
         renderables.add(r);
     }
 

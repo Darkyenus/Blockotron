@@ -21,7 +21,7 @@ public class Grass extends Block {
     }
 
     @Override
-    public void render(int x, int y, int z, BlockMesh mesh) {
-        mesh.createBlock(x, y, z, (byte)-1, TOP, SIDE, BOTTOM);
+    public void render(int x, int y, int z, byte occlusion, BlockMesh mesh) {
+        mesh.createBlock(x, y, z, occlusion, TOP, SIDE, BOTTOM);
     }
 }
