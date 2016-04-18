@@ -1,11 +1,13 @@
 package darkyenus.blockotron.render;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.*;
-import com.badlogic.gdx.graphics.g3d.*;
-import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.g3d.Environment;
+import com.badlogic.gdx.graphics.g3d.ModelBatch;
+import com.badlogic.gdx.graphics.g3d.Renderable;
+import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader;
 import com.badlogic.gdx.graphics.g3d.utils.DefaultShaderProvider;
@@ -152,8 +154,7 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             staticOpaque.begin();
             staticTransparent.begin();
             int[] blocks = {0};
-            chunk.forEachNonAirBlock((cX, cY, cZ, block) -> {
-                if (block.dynamic) return;
+            chunk.forEachStaticNonAirBlock((cX, cY, cZ, block) -> {
                 block.render(xOff + cX, yOff + cY, cZ, block.transparent ? staticTransparent : staticOpaque);
                 blocks[0]++;
             });
@@ -168,7 +169,7 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             final BlockMesh dynamicTransparent = this.dynamicTransparent;
             dynamicOpaque.begin();
             dynamicTransparent.begin();
-            chunk.forEachNonAirBlock((cX, cY, cZ, block) -> {
+            chunk.forEachDynamicNonAirBlock((cX, cY, cZ, block) -> {
                 if (!block.dynamic) return;
                 block.render(xOff + cX, yOff + cY, cZ, block.transparent ? dynamicTransparent : dynamicOpaque);
             });

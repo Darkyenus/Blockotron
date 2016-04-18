@@ -28,20 +28,25 @@ public class BlockMesh implements RenderableProvider {
     private int faces = 0;
     private Mesh mesh;
 
-
     public BlockMesh(boolean isStatic, Material material, int maxFaces) {
         this.material = material;
         this.maxFaces = maxFaces;
-        mesh = new Mesh(isStatic, facesToVertices(maxFaces), facesToIndices(maxFaces), attributes);
+        final int maxIndices = facesToIndices(maxFaces);
+        mesh = new Mesh(isStatic, facesToVertices(maxFaces), maxIndices, attributes);
         vertices = new float[facesToVertices(maxFaces) * vertexSize];
-        regenerateIndices();
+        mesh.setIndices(getIndices(maxIndices), 0, maxIndices);
     }
 
-    private void regenerateIndices(){
-        int len = maxFaces * 6;
-        short[] indices = new short[len];
+    private static short[] indicesCache;
+    /** Since all indices are the same, we generate them once and then serve cached version.
+     * Cached version may be larger than what is requested, so be prepared to handle that. */
+    private short[] getIndices(int length){
+        if(indicesCache != null && indicesCache.length >= length){
+            return indicesCache;
+        }
+        short[] indices = new short[length];
         short j = 0;
-        for (int i = 0; i < len; i += 6, j += 4) {
+        for (int i = 0; i < length; i += 6, j += 4) {
             indices[i] = j;
             indices[i + 1] = (short)(j + 1);
             indices[i + 2] = (short)(j + 2);
@@ -49,7 +54,7 @@ public class BlockMesh implements RenderableProvider {
             indices[i + 4] = (short)(j + 3);
             indices[i + 5] = j;
         }
-        mesh.setIndices(indices);
+        return indicesCache = indices;
     }
 
     private static int facesToVertices(int faces){
