@@ -14,7 +14,7 @@ import darkyenus.blockotron.world.BlockFilter;
 import darkyenus.blockotron.world.World;
 
 /**
- *
+ * Draws the wireframe cursor over the selected block.
  */
 public class WorldCursorOverlay implements RenderableProvider {
 
@@ -35,6 +35,8 @@ public class WorldCursorOverlay implements RenderableProvider {
         cursorMaterial = new Material(ColorAttribute.createDiffuse(Color.BLACK), new DepthTestAttribute(0));
     }
 
+    /** Update cursor's position based on parameters.
+     * @param distance max block distance that will be still drawn */
     public void update(World world, Camera camera, float distance){
         final World.RayCastResult target = world.getBlockOnRay(camera.position, camera.direction, distance, BlockFilter.NO_AIR);
         if(target == null){

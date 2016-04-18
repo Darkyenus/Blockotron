@@ -1,6 +1,6 @@
 package darkyenus.blockotron.world;
 
-import darkyenus.blockotron.render.BlockMesh;
+import darkyenus.blockotron.render.RectangleMeshBatch;
 
 /**
  *
@@ -19,5 +19,5 @@ public abstract class Block {
         this.dynamic = dynamic;
     }
 
-    public abstract void render(int x, int y, int z, byte occlusion, BlockMesh mesh);
+    public abstract void render(int x, int y, int z, byte occlusion, RectangleMeshBatch mesh);
 }

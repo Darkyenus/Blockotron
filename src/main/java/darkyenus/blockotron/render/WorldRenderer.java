@@ -25,7 +25,7 @@ import darkyenus.blockotron.world.World;
 import darkyenus.blockotron.world.WorldObserver;
 
 /**
- *
+ * WorldObserver which takes care of rendering the {@link World} and in-game HUD.
  */
 public class WorldRenderer implements WorldObserver, RenderableProvider {
 
@@ -69,7 +69,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
     public void render(){
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        cursorOverlay.update(world, camera, 200f);
+        cursorOverlay.update(world, camera, 20f);
 
         modelBatch.begin(camera);
         {
@@ -128,11 +128,12 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         }
     }
 
+    /** Takes care of building chunk block meshes. */
     private static class ChunkRenderable implements RenderableProvider {
 
         private final Chunk chunk;
         private final BoundingBox boundingBox = new BoundingBox();
-        private final BlockMesh staticOpaque, staticTransparent, dynamicOpaque, dynamicTransparent;
+        private final RectangleMeshBatch staticOpaque, staticTransparent, dynamicOpaque, dynamicTransparent;
 
         private boolean staticDirty = true;
 
@@ -141,10 +142,10 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             boundingBox.min.set(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
             boundingBox.max.set(boundingBox.min).add(Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_HEIGHT);
 
-            staticOpaque = new BlockMesh(true, BlockFaces.opaqueMaterial, 2 << 12);
-            staticTransparent = new BlockMesh(true, BlockFaces.transparentMaterial, 2 << 8);
-            dynamicOpaque = new BlockMesh(false, BlockFaces.opaqueMaterial, 2 << 8);
-            dynamicTransparent = new BlockMesh(false, BlockFaces.transparentMaterial, 2 << 8);
+            staticOpaque = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, 2 << 12);
+            staticTransparent = new RectangleMeshBatch(true, BlockFaces.transparentMaterial, 2 << 8);
+            dynamicOpaque = new RectangleMeshBatch(false, BlockFaces.opaqueMaterial, 2 << 8);
+            dynamicTransparent = new RectangleMeshBatch(false, BlockFaces.transparentMaterial, 2 << 8);
         }
 
         private void dispose(){
@@ -157,8 +158,8 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         private void rebuildStaticMesh(){
             final int xOff = chunk.x * Chunk.CHUNK_SIZE;
             final int yOff = chunk.y * Chunk.CHUNK_SIZE;
-            final BlockMesh staticOpaque = this.staticOpaque;
-            final BlockMesh staticTransparent = this.staticTransparent;
+            final RectangleMeshBatch staticOpaque = this.staticOpaque;
+            final RectangleMeshBatch staticTransparent = this.staticTransparent;
             staticOpaque.begin();
             staticTransparent.begin();
             int[] blocks = {0};
@@ -173,8 +174,8 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         private void rebuildDynamicMesh(){
             final int xOff = chunk.x * Chunk.CHUNK_SIZE;
             final int yOff = chunk.y * Chunk.CHUNK_SIZE;
-            final BlockMesh dynamicOpaque = this.dynamicOpaque;
-            final BlockMesh dynamicTransparent = this.dynamicTransparent;
+            final RectangleMeshBatch dynamicOpaque = this.dynamicOpaque;
+            final RectangleMeshBatch dynamicTransparent = this.dynamicTransparent;
             dynamicOpaque.begin();
             dynamicTransparent.begin();
             chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {

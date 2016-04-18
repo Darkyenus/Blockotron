@@ -1,7 +1,11 @@
 package darkyenus.blockotron.render;
 
 /**
+ * Represents a texture (region) of a terrain texture of given id.
  *
+ * Holds necessary information (UV) for rendering.
+ *
+ * Created by {@link BlockFaces#getBlockFace(String)}.
  */
 public final class BlockFaceTexture {
 
@@ -9,18 +13,11 @@ public final class BlockFaceTexture {
 
     public float u,v,u2,v2;
 
-    public BlockFaceTexture(String id) {
+    protected BlockFaceTexture(String id) {
         this.id = id;
     }
 
-    public BlockFaceTexture(String id, float u, float v, float u2, float v2) {
-        this.id = id;
-        this.u = u;
-        this.v = v;
-        this.u2 = u2;
-        this.v2 = v2;
-    }
-
+    /** Set UV of this to the UV of argument */
     public void set(BlockFaceTexture other){
         this.u = other.u;
         this.v = other.v;

@@ -4,7 +4,8 @@ import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.utils.DefaultRenderableSorter;
 
 /**
- *
+ * Extended version of basic renderable sorter which supports multiple sorting levels denoted by
+ * Integer instance passed as userData. Positive levels will be drawn on top.
  */
 public class BiasedRenderableSorter extends DefaultRenderableSorter {
 

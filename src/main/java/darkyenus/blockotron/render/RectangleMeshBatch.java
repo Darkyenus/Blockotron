@@ -12,9 +12,13 @@ import com.badlogic.gdx.utils.Pool;
 import darkyenus.blockotron.world.Side;
 
 /**
+ * Used to dynamically create a Mesh out of textured rectangles.
  *
+ * Holds the mesh, takes care of its lifecycle, vertices and indices.
+ * Provides a begin() - add - end() style API for simple rendering of shapes out of rectangles.
+ * Also is a RenderableProvider and draws everything added during the last begin() - add - end() cycle.
  */
-public class BlockMesh implements RenderableProvider {
+public class RectangleMeshBatch implements RenderableProvider {
 
     private final static VertexAttributes attributes = new VertexAttributes(
             VertexAttribute.Position(),//3
@@ -24,11 +28,17 @@ public class BlockMesh implements RenderableProvider {
 
     private final Material material;
     private float[] vertices;
+    /** Max amount of rectangular faces that can fit into the mesh. */
     private int maxFaces;
+    /** Current amount of rectangular faces in the mesh (or buffer if after begin() but before end()). */
     private int faces = 0;
     private Mesh mesh;
 
-    public BlockMesh(boolean isStatic, Material material, int maxFaces) {
+    /** Note that this is a quite heavy object.
+     * @param isStatic true if the mesh is not regenerated each frame/often
+     * @param material of the mesh
+     * @param maxFaces max rectangles to hold, can't draw more */
+    public RectangleMeshBatch(boolean isStatic, Material material, int maxFaces) {
         this.material = material;
         this.maxFaces = maxFaces;
         final int maxIndices = facesToIndices(maxFaces);
@@ -57,36 +67,51 @@ public class BlockMesh implements RenderableProvider {
         return indicesCache = indices;
     }
 
+    /** Return the amount of vertices that corresponds to given amount of rectangular faces. */
     private static int facesToVertices(int faces){
         return faces * 4;
     }
 
+    /** Return the amount of indices that corresponds to given amount of rectangular faces. */
     private static int facesToIndices(int faces){
         return faces * 6;
     }
 
+    /** Clear everything rendered and begin to add new shapes.
+     * Do not call if already called and not {@link #end()}ed. */
     public void begin(){
         faces = 0;
     }
 
+    /** Draw a block at given world coordinates.
+     * Must be called between begin() and end().
+     * @param faceMask occlusion mask, only faces which are not occluded will be drawn
+     *                 (see {@link darkyenus.blockotron.world.Chunk#getOcclusionMask(int, int, int)})
+     * @param texture of all faces */
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture texture){
-        if((faceMask & Side.top) == 0) createBlockFace(x, y, z, TOP_OFFSETS, texture);
-        if((faceMask & Side.bottom) == 0) createBlockFace(x, y, z, BOTTOM_OFFSETS, texture);
-        if((faceMask & Side.west) == 0) createBlockFace(x, y, z, LEFT_OFFSETS, texture);
-        if((faceMask & Side.east) == 0) createBlockFace(x, y, z, RIGHT_OFFSETS, texture);
-        if((faceMask & Side.north) == 0) createBlockFace(x, y, z, BACK_OFFSETS, texture);
-        if((faceMask & Side.south) == 0) createBlockFace(x, y, z, FRONT_OFFSETS, texture);
+        if((faceMask & Side.east) == 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, texture);
+        if((faceMask & Side.west) == 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, texture);
+        if((faceMask & Side.north) == 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, texture);
+        if((faceMask & Side.south) == 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, texture);
+        if((faceMask & Side.top) == 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, texture);
+        if((faceMask & Side.bottom) == 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, texture);
     }
 
+    /** @see #createBlock(int, int, int, byte, BlockFaceTexture) */
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture top, BlockFaceTexture sides, BlockFaceTexture bottom){
-        if((faceMask & Side.top) == 0) createBlockFace(x, y, z, TOP_OFFSETS, top);
-        if((faceMask & Side.bottom) == 0) createBlockFace(x, y, z, BOTTOM_OFFSETS, bottom);
-        if((faceMask & Side.west) == 0) createBlockFace(x, y, z, LEFT_OFFSETS, sides);
-        if((faceMask & Side.east) == 0) createBlockFace(x, y, z, RIGHT_OFFSETS, sides);
-        if((faceMask & Side.north) == 0) createBlockFace(x, y, z, BACK_OFFSETS, sides);
-        if((faceMask & Side.south) == 0) createBlockFace(x, y, z, FRONT_OFFSETS, sides);
+        if((faceMask & Side.east) == 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, sides);
+        if((faceMask & Side.west) == 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, sides);
+        if((faceMask & Side.north) == 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, sides);
+        if((faceMask & Side.south) == 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, sides);
+        if((faceMask & Side.top) == 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, top);
+        if((faceMask & Side.bottom) == 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, bottom);
     }
 
+    /** Draw a single face of a block. Most blocks should use one of createBlock() methods.
+     * Must be called between begin() and end().
+     * @param x (+ y,z) world coordinates of the block
+     * @param faceOffsets offsets of the face vertices to the block origin (see {@link #TOP_FACE_OFFSETS} etc.)
+     * @param texture to be drawn on the face */
     public void createBlockFace (int x, int y, int z, float[] faceOffsets, BlockFaceTexture texture){
         if(faces == maxFaces){
             return;
@@ -125,6 +150,7 @@ public class BlockMesh implements RenderableProvider {
         faces++;
     }
 
+    /** Update the mesh and end the edit block. */
     public void end(){
         final int verticesSize = facesToVertices(faces) * 6;
 
@@ -149,49 +175,50 @@ public class BlockMesh implements RenderableProvider {
         renderables.add(r);
     }
 
+    /** Release mesh. Instance can't be used anymore after this is called. */
     public void dispose(){
         mesh.dispose();
     }
 
-    private static final float[] TOP_OFFSETS = {
-            0, 0, 1,
-            1, 0, 1,
-            1, 1, 1,
-            0, 1, 1
-    };
-
-    private static final float[] BOTTOM_OFFSETS = {
-            0, 1, 0,
-            1, 1, 0,
-            1, 0, 0,
-            0, 0, 0
-    };
-
-    private static final float[] LEFT_OFFSETS = {
-            0, 0, 0,
-            0, 0, 1,
-            0, 1, 1,
-            0, 1, 0
-    };
-
-    private static final float[] RIGHT_OFFSETS = {
+    public static final float[] EAST_FACE_OFFSETS = {
             1, 1, 0,
             1, 1, 1,
             1, 0, 1,
             1, 0, 0
     };
 
-    private static final float[] FRONT_OFFSETS = {
+    public static final float[] WEST_FACE_OFFSETS = {
+            0, 0, 0,
+            0, 0, 1,
+            0, 1, 1,
+            0, 1, 0
+    };
+
+    public static final float[] NORTH_FACE_OFFSETS = {
+            0, 1, 0,
+            0, 1, 1,
+            1, 1, 1,
+            1, 1, 0
+    };
+
+    public static final float[] SOUTH_FACE_OFFSETS = {
             1, 0, 0,
             1, 0, 1,
             0, 0, 1,
             0, 0, 0,
     };
 
-    private static final float[] BACK_OFFSETS = {
-            0, 1, 0,
-            0, 1, 1,
+    public static final float[] TOP_FACE_OFFSETS = {
+            0, 0, 1,
+            1, 0, 1,
             1, 1, 1,
-            1, 1, 0
+            0, 1, 1
+    };
+
+    public static final float[] BOTTOM_FACE_OFFSETS = {
+            0, 1, 0,
+            1, 1, 0,
+            1, 0, 0,
+            0, 0, 0
     };
 }

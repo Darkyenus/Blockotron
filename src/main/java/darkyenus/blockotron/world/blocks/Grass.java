@@ -2,7 +2,7 @@ package darkyenus.blockotron.world.blocks;
 
 import darkyenus.blockotron.render.BlockFaceTexture;
 import darkyenus.blockotron.render.BlockFaces;
-import darkyenus.blockotron.render.BlockMesh;
+import darkyenus.blockotron.render.RectangleMeshBatch;
 import darkyenus.blockotron.world.Block;
 
 /**
@@ -21,7 +21,7 @@ public class Grass extends Block {
     }
 
     @Override
-    public void render(int x, int y, int z, byte occlusion, BlockMesh mesh) {
+    public void render(int x, int y, int z, byte occlusion, RectangleMeshBatch mesh) {
         mesh.createBlock(x, y, z, occlusion, TOP, SIDE, BOTTOM);
     }
 }
