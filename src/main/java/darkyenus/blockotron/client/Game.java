@@ -1,7 +1,11 @@
 package darkyenus.blockotron.client;
 
 import com.badlogic.gdx.*;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import darkyenus.blockotron.render.BlockFaces;
+
+import java.io.File;
 
 /**
  *
@@ -19,6 +23,7 @@ public class Game extends com.badlogic.gdx.Game {
 
     @Override
     public void create() {
+        BlockFaces.initialize();
         setScreen(new MenuScreen());
     }
 
@@ -40,5 +45,17 @@ public class Game extends com.badlogic.gdx.Game {
         super.dispose();
         uiBatch.dispose();
         uiBatch = null;
+    }
+
+    private static FileHandle resourceRoot = null;
+
+    public static FileHandle getResourceRoot(){
+        if(resourceRoot == null){
+            resourceRoot = new FileHandle(new File("resources"));
+            if(!resourceRoot.isDirectory()){
+                Gdx.app.error("Game.getResourceRoot()","Failed to find resource directory at "+resourceRoot.file().getAbsolutePath());
+            }
+        }
+        return resourceRoot;
     }
 }

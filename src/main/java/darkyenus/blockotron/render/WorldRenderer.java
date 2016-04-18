@@ -57,11 +57,6 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
     private World world;
     private final LongMap<ChunkRenderable> renderableChunks = new LongMap<>();
 
-
-    private static final Texture texture = new Texture("block.png");
-    private static final Material opaqueMaterial = new Material("blockOpaque", TextureAttribute.createDiffuse(texture));
-    private static final Material transparentMaterial = new Material("blockTransparent", TextureAttribute.createDiffuse(texture), new BlendingAttribute());
-
     public void setCamera(Vector3 newPosition, Vector3 newDirection){
         camera.position.set(newPosition);
         camera.direction.set(newDirection);
@@ -136,10 +131,10 @@ public class WorldRenderer implements World.WorldObserver, RenderableProvider {
             boundingBox.min.set(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
             boundingBox.max.set(boundingBox.min).add(Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_HEIGHT);
 
-            staticOpaque = new BlockMesh(true, opaqueMaterial, 2 << 12);
-            staticTransparent = new BlockMesh(true, transparentMaterial, 2 << 8);
-            dynamicOpaque = new BlockMesh(false, opaqueMaterial, 2 << 8);
-            dynamicTransparent = new BlockMesh(false, transparentMaterial, 2 << 8);
+            staticOpaque = new BlockMesh(true, BlockFaces.opaqueMaterial, 2 << 12);
+            staticTransparent = new BlockMesh(true, BlockFaces.transparentMaterial, 2 << 8);
+            dynamicOpaque = new BlockMesh(false, BlockFaces.opaqueMaterial, 2 << 8);
+            dynamicTransparent = new BlockMesh(false, BlockFaces.transparentMaterial, 2 << 8);
         }
 
         private void dispose(){
