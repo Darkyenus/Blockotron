@@ -6,7 +6,8 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
 
 /**
- *
+ * Holds all data of single world, either directly or through {@link Chunk}s.
+ * Also serves to route various information and behavior to its {@link #observers}.
  */
 public class World {
 
@@ -19,11 +20,12 @@ public class World {
         chunkProvider.initialize(this);
     }
 
+    /** Get unique long-key under which the chunk at given chunk coordinates is saved at {@link #chunks}. */
     public static long chunkCoordKey(int x, int y){
         return ((long)x << 32) | ((long)y & 0xFFFF_FFFFL);
     }
 
-    /** Return chunk at given chunk-coordinates. */
+    /** Return chunk at given chunk-coordinates. Chunk is retrieved from ChunkProvider if not loaded. */
     public Chunk getChunk(int x, int y){
         final long key = chunkCoordKey(x, y);
         final Chunk existing = chunks.get(key);
@@ -45,32 +47,42 @@ public class World {
         return chunks.get(chunkCoordKey(x, y));
     }
 
-    public static int outerChunkCoordinate(float xy){
+    /** Translate a world x or y coordinate into a chunk-coordinate.
+     * @see Chunk#x */
+    public static int chunkCoord(float xy){
         float c = xy / Chunk.CHUNK_SIZE;
         return MathUtils.floor(c);
     }
 
-    public static int innerChunkCoordinateXY(float xy){
+    /** Translate a world x or y coordinate into an in-chunk coordinate of its respective chunk.
+     * Returned coordinate is always valid.
+     * @see #inChunkCoordZ(float) */
+    public static int inChunkCoordXY(float xy){
         float c = xy % Chunk.CHUNK_SIZE;
         if(c < 0)c += Chunk.CHUNK_SIZE;
         return (int)c;
     }
 
-    public static int innerChunkCoordinateZ(float z){
+    /** Translate a world z coordinate into an in-chunk coordinate of its respective chunk.
+     * Returned coordinate may not be valid if z is < 0 or >= {@link Chunk#CHUNK_HEIGHT}.
+     * @see #inChunkCoordXY(float) */
+    public static int inChunkCoordZ(float z){
         return (int)z;
     }
 
+    /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
     public Block getLoadedBlock(float x, float y, float z){
-        final Chunk loadedChunk = getLoadedChunk(outerChunkCoordinate(x), outerChunkCoordinate(y));
+        final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
         if(loadedChunk == null)return null;
-        final int cx = innerChunkCoordinateXY(x);
-        final int cy = innerChunkCoordinateXY(y);
-        final int cz = innerChunkCoordinateZ(z);
+        final int cx = inChunkCoordXY(x);
+        final int cy = inChunkCoordXY(y);
+        final int cz = inChunkCoordZ(z);
         if(cz < 0 || cz >= Chunk.CHUNK_HEIGHT) return null;
         return loadedChunk.getBlock(cx, cy, cz);
     }
 
-    private static float intbound(float s, float ds) {
+    /** Utility method for block ray-casting. */
+    private static float intBound(float s, float ds) {
         // Find the smallest positive t such that s+t*ds is an integer.
         if(ds < 0){
             s = -s;
@@ -78,16 +90,17 @@ public class World {
         }
         //Positive modulo: s % 1f
         s = s - MathUtils.floor(s);
-        /*
-        s = s % 1f;
-        if(s < 0){
-            s += 1f;
-        }
-        */
         return (1f - s)/ds;
     }
 
+    /** Instance of return value of getBlockOnRay, for GC reasons. */
     private final RayCastResult getBlockOnRay_TMP = new RayCastResult();
+    /** Cast a ray from given origin (world coordinated) in given direction (must be normalized)
+     * and return the first block hit which satisfies given filter. When search is not successful in maxDistance units,
+     * returns null.
+     *
+     * When successful returns instance of RayCastResult. Null when for any reason unsuccessful.
+     * NOTE: Returned instance is the same for each invocation (for GC reasons), so do not keep it around! */
 	public RayCastResult getBlockOnRay (Vector3 origin, Vector3 direction, float maxDistance, BlockFilter filter) {
         // http://gamedev.stackexchange.com/questions/47362/cast-ray-to-select-block-in-voxel-game
         /* Algorithm derived from:
@@ -105,9 +118,9 @@ public class World {
 		float tDeltaX = stepX / direction.x;
 		float tDeltaY = stepY / direction.y;
 		float tDeltaZ = stepZ / direction.z;
-		float tMaxX = intbound(origin.x, direction.x);
-		float tMaxY = intbound(origin.y, direction.y);
-		float tMaxZ = intbound(origin.z, direction.z);
+		float tMaxX = intBound(origin.x, direction.x);
+		float tMaxY = intBound(origin.y, direction.y);
+		float tMaxZ = intBound(origin.z, direction.z);
 
 		float x = MathUtils.floor(origin.x);
 		float y = MathUtils.floor(origin.y);
@@ -156,43 +169,50 @@ public class World {
 		}
 	}
 
+    /** Can't be removed.
+     * @see WorldObserver */
     public void addObserver(WorldObserver observer){
         observer.initialize(this);
         observers.add(observer);
+        if(chunks.size > 0){
+            for (Chunk chunk : chunks.values()) {
+                observer.chunkLoaded(chunk);
+            }
+        }
     }
 
+    /** Get all observers of this world. Mostly used to notify observers. */
     public Iterable<WorldObserver> observers() {
         return observers;
     }
 
-    public interface WorldObserver {
-        void initialize(World world);
-        void chunkLoaded(Chunk chunk);
-        void chunkChanged(Chunk chunk, boolean staticBlocks);
-        void chunkUnloaded(Chunk chunk);
-    }
-
+    /** Result of block ray-casting methods. */
     public static final class RayCastResult {
         private Block block;
         private Side side;
         private int x,y,z;
 
+        /** Found block. Never null. */
         public Block getBlock() {
             return block;
         }
 
+        /** Side through which the ray hit the block. MAY BE NULL if the ray started in this block. */
         public Side getSide() {
             return side;
         }
 
+        /** World coordinate of found block. */
         public int getX() {
             return x;
         }
 
+        /** World coordinate of found block. */
         public int getY() {
             return y;
         }
 
+        /** World coordinate of found block. */
         public int getZ() {
             return z;
         }

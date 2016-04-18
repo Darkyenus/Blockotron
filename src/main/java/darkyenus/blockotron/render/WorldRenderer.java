@@ -22,11 +22,12 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import darkyenus.blockotron.world.Chunk;
 import darkyenus.blockotron.world.World;
+import darkyenus.blockotron.world.WorldObserver;
 
 /**
  *
  */
-public class WorldRenderer implements World.WorldObserver, RenderableProvider {
+public class WorldRenderer implements WorldObserver, RenderableProvider {
 
     public final PerspectiveCamera camera = new PerspectiveCamera();{
         camera.fieldOfView = 75;

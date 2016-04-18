@@ -5,19 +5,31 @@ import darkyenus.blockotron.world.blocks.Air;
 import java.util.Arrays;
 
 /**
- *
+ * Vertical square slice of the {@link World}, holding blocks, entities and other world-grid related data, like lighting.
+ * All coordinates in this class (except when noted otherwise) are in-chunk, that is,
+ * they start on (0,0,0) (incl) and end on (CHUNK_SIZE, CHUNK_SIZE, CHUNK_HEIGHT) (excl), in this chunk.
  */
 public final class Chunk {
 
+    /** Amount of blocks in the chunk in X and Y dimensions. */
     public static final int CHUNK_SIZE = 16;
+    /** Amount of blocks in the chunk in the Z dimension. */
     public static final int CHUNK_HEIGHT = 128;
 
+    /** World this chunk is part of. World does not necessarily have to know about this chunk.
+     * @see #loaded */
     public final World world;
+    /** Position of this chunk in the {@link #world}.
+     * Chunk coordinates, multiply by {@link #CHUNK_SIZE} to get the world coordinates of this chunk's origin. */
     public final int x, y;
+    /** Set by {@link #world}. Loaded chunk may interact with other chunks, non-loaded must not. */
     public boolean loaded = false;
-    /** Blocks in 1d array for performance. X changes fastest, then Y then Z. Does not contain any null. */
+    /** Blocks of this chunk in 1D array for performance. X changes fastest, then Y then Z. Does not contain any nulls.
+     * @see #coord(int, int, int) */
     private final Block[] blocks = new Block[CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT];
-    /** Indices correspond to blocks. For each block, contains which Sides are occluded (= on that side is an opaque block). */
+    /** Indexing identical to of {@link #blocks}.
+     * For each block, contains which Sides are occluded (= on that side is an opaque block).
+     * Byte holds flags from {@link Side} */
     private final byte[] occlusion = new byte[blocks.length];
 
     //Iteration hints
@@ -30,33 +42,44 @@ public final class Chunk {
         Arrays.fill(blocks, Air.AIR);
     }
 
-    /** Maps chunk-local coordinates to unique int key. */
+    /** Maps in-chunk coordinates to unique int key, which is its index in {@link #blocks}.
+     * Correct result is guaranteed only when coordinates are valid:
+     * x and y >= 0 && < CHUNK_SIZE, z >= 0 && < CHUNK_HEIGHT */
     private int coord(int x, int y, int z) {
         return x | y << 4 | z << 8;
     }
 
-    /** Get block inside this chunk, using internal chunk coordinates.
-     * Never returns null, undefined behavior if coordinates out of bounds. */
+    /** Get block inside this chunk, using in-chunk coordinates.
+     * Never returns null, undefined behavior if invalid coordinates. */
     public Block getBlock(int x, int y, int z) {
         return blocks[coord(x, y, z)];
     }
 
+    /** Get the occlusion mask of given block.
+     * Undefined behavior if out of bounds. */
     public byte getOcclusionMask(int x, int y, int z){
         return occlusion[coord(x, y, z)];
     }
 
+    /** Set the block in given in-chunk coordinate.
+     * Undefined behavior if invalid coordinates.
+     * Updates the occlusion masks of neighbors (in the same chunk, for now).
+     * If chunk is loaded, notifies world about the change. */
     public void setBlock(int x, int y, int z, Block block) {
         final Block[] blocks = this.blocks;
         final int coord = coord(x, y, z);
         final Block old = blocks[coord];
+        if (old == block) return;
         blocks[coord] = block;
 
         //Update iterator hints
         if(block != Air.AIR) {
             if (block.dynamic) {
-                expandDynamicIterationHint(coord);
+                dynamicMin = Math.min(dynamicMin, coord);
+                dynamicMax = Math.max(dynamicMax, coord);
             } else {
-                expandStaticIterationHint(coord);
+                staticMin = Math.min(staticMin, coord);
+                staticMax = Math.max(staticMax, coord);
             }
         }
 
@@ -106,7 +129,7 @@ public final class Chunk {
         updateSelfOcclusion(x,y,z);
 
         if(loaded) {
-            for (World.WorldObserver observer : world.observers()) {
+            for (WorldObserver observer : world.observers()) {
                 observer.chunkChanged(this, !old.dynamic || !block.dynamic);
             }
         }
@@ -147,16 +170,7 @@ public final class Chunk {
         occlusion[coord(x,y,z)] = selfOcclusion;
     }
 
-    private void expandDynamicIterationHint(int key){
-        dynamicMin = Math.min(dynamicMin, key);
-        dynamicMax = Math.max(dynamicMax, key);
-    }
-
-    private void expandStaticIterationHint(int key){
-        staticMin = Math.min(staticMin, key);
-        staticMax = Math.max(staticMax, key);
-    }
-
+    /** Call the iterator with each static non-air block in the chunk, in order from in-chunk 0,0,0 up. */
     public void forEachStaticNonAirBlock(BlockIterator iterator){
         final Block[] blocks = this.blocks;
         final byte[] occlusion = this.occlusion;
@@ -188,6 +202,7 @@ public final class Chunk {
         staticMax = currentMax;
     }
 
+    /** Call the iterator with each dynamic non-air block in the chunk, in order from in-chunk 0,0,0 up. */
     public void forEachDynamicNonAirBlock(BlockIterator iterator){
         final Block[] blocks = this.blocks;
         final byte[] occlusion = this.occlusion;
@@ -220,6 +235,9 @@ public final class Chunk {
     }
 
     public interface BlockIterator {
+        /** @param cX (+ cY, cZ) in-chunk coordinates of returned block
+         *  @param occlusion Occlusion mask of returned block
+         *  @param block instance of returned block */
         void block(int cX, int cY, int cZ, byte occlusion, Block block);
     }
 }

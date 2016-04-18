@@ -65,8 +65,8 @@ public class GameScreen extends Screen {
             sb.append("X: ").append(renderer.camera.position.x).append('\n');
             sb.append("Y: ").append(renderer.camera.position.y).append('\n');
             sb.append("Z: ").append(renderer.camera.position.z).append('\n');
-            sb.append("Chunk X: ").append(World.outerChunkCoordinate(renderer.camera.position.x)).append(" ").append(World.innerChunkCoordinateXY(renderer.camera.position.x)).append('\n');
-            sb.append("Chunk Y: ").append(World.outerChunkCoordinate(renderer.camera.position.y)).append(" ").append(World.innerChunkCoordinateXY(renderer.camera.position.y)).append('\n');
+            sb.append("Chunk X: ").append(World.chunkCoord(renderer.camera.position.x)).append(" ").append(World.inChunkCoordXY(renderer.camera.position.x)).append('\n');
+            sb.append("Chunk Y: ").append(World.chunkCoord(renderer.camera.position.y)).append(" ").append(World.inChunkCoordXY(renderer.camera.position.y)).append('\n');
             sb.append("Dir X: ").append(renderer.camera.direction.x).append('\n');
             sb.append("Dir Y: ").append(renderer.camera.direction.y).append('\n');
             sb.append("Dir Z: ").append(renderer.camera.direction.z).append('\n');
@@ -79,11 +79,11 @@ public class GameScreen extends Screen {
                 sb.append("   Y: ").append(blockOnRay.getY()).append('\n');
                 sb.append("   Z: ").append(blockOnRay.getZ()).append('\n');
                 sb.append(" Side: ").append(blockOnRay.getSide()).append('\n');
-                final byte occlusionMask = world.getChunk(World.outerChunkCoordinate(blockOnRay.getX()), World.outerChunkCoordinate(blockOnRay.getY()))
+                final byte occlusionMask = world.getChunk(World.chunkCoord(blockOnRay.getX()), World.chunkCoord(blockOnRay.getY()))
                         .getOcclusionMask(
-                                World.innerChunkCoordinateXY(blockOnRay.getX()),
-                                World.innerChunkCoordinateXY(blockOnRay.getY()),
-                                World.innerChunkCoordinateZ(blockOnRay.getZ()));
+                                World.inChunkCoordXY(blockOnRay.getX()),
+                                World.inChunkCoordXY(blockOnRay.getY()),
+                                World.inChunkCoordZ(blockOnRay.getZ()));
                 if(occlusionMask != 0){
                     sb.append(" Occluded from: ");
                     for (Side side : Side.values()) {
