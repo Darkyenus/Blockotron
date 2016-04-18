@@ -96,20 +96,20 @@ public class BlockMesh implements RenderableProvider {
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
-        v[vertexOffset++] = texture.u;
+        v[vertexOffset++] = texture.u2;
+        v[vertexOffset++] = texture.v2;
+
+        v[vertexOffset++] = x + faceOffsets[faceOffset++];
+        v[vertexOffset++] = y + faceOffsets[faceOffset++];
+        v[vertexOffset++] = z + faceOffsets[faceOffset++];
+        v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
-        v[vertexOffset++] = texture.u2;
-        v[vertexOffset++] = texture.v2;
-
-        v[vertexOffset++] = x + faceOffsets[faceOffset++];
-        v[vertexOffset++] = y + faceOffsets[faceOffset++];
-        v[vertexOffset++] = z + faceOffsets[faceOffset++];
-        v[vertexOffset++] = texture.u2;
-        v[vertexOffset++] = texture.v2;
+        v[vertexOffset++] = texture.u;
+        v[vertexOffset++] = texture.v;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
@@ -175,10 +175,10 @@ public class BlockMesh implements RenderableProvider {
     };
 
     private static final float[] FRONT_OFFSETS = {
-            0, 0, 0,
             1, 0, 0,
             1, 0, 1,
-            0, 0, 1
+            0, 0, 1,
+            0, 0, 0,
     };
 
     private static final float[] BACK_OFFSETS = {

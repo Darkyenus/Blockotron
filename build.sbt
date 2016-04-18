@@ -10,7 +10,7 @@ val gdxVersion = "1.9.2"
 
 libraryDependencies ++= Seq(
   "com.badlogicgames.gdx" % "gdx" % gdxVersion,
-  "com.badlogicgames.gdx" % "gdx-backend-lwjgl" % gdxVersion,
+  "com.badlogicgames.gdx" % "gdx-backend-lwjgl3" % gdxVersion,
   "com.badlogicgames.gdx" % "gdx-platform" % gdxVersion classifier "natives-desktop"
 )
 
