@@ -112,6 +112,8 @@ public class World {
 		float y = MathUtils.floor(origin.y);
 		float z = MathUtils.floor(origin.z);
 
+        Side side = null;
+
 		for (;;) {
 			final Block block = getLoadedBlock(x, y, z);
 			if (block == null) return null;
@@ -121,6 +123,7 @@ public class World {
                 result.x = MathUtils.floor(x);
                 result.y = MathUtils.floor(y);
                 result.z = MathUtils.floor(z);
+                result.side = side;
                 return result;
             }
 
@@ -129,20 +132,24 @@ public class World {
                     if(tMaxX > maxDistance) return null;
 					x += stepX;
 					tMaxX += tDeltaX;
+                    side = stepX < 0 ? Side.EAST : Side.WEST;
 				} else {
                     if(tMaxZ > maxDistance) return null;
 					z += stepZ;
 					tMaxZ += tDeltaZ;
+                    side = stepZ < 0 ? Side.TOP : Side.BOTTOM;
 				}
 			} else {
 				if (tMaxY < tMaxZ) {
                     if(tMaxY > maxDistance) return null;
 					y += stepY;
 					tMaxY += tDeltaY;
+                    side = stepY < 0 ? Side.NORTH : Side.SOUTH;
 				} else {
                     if(tMaxZ > maxDistance) return null;
                     z += stepZ;
                     tMaxZ += tDeltaZ;
+                    side = stepZ < 0 ? Side.TOP : Side.BOTTOM;
 				}
 			}
 		}
@@ -166,10 +173,15 @@ public class World {
 
     public static final class RayCastResult {
         private Block block;
+        private Side side;
         private int x,y,z;
 
         public Block getBlock() {
             return block;
+        }
+
+        public Side getSide() {
+            return side;
         }
 
         public int getX() {

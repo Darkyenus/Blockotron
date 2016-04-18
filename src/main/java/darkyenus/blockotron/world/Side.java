@@ -7,10 +7,10 @@ import com.badlogic.gdx.math.Vector3;
  *
  */
 public enum Side {
-    RIGHT(1, 0, 0),
-    LEFT(-1, 0, 0),
-    BACK(0, 1, 0),
-    FRONT(0, -1, 0),
+    EAST(1, 0, 0),
+    WEST(-1, 0, 0),
+    NORTH(0, 1, 0),
+    SOUTH(0, -1, 0),
     TOP(0, 0, 1),
     BOTTOM(0, 0, -1),
     ;
@@ -37,10 +37,10 @@ public enum Side {
     }
 
     // Optimized access to Side.flag (can be inlined by compiler)
-    public static final byte right =    1;
-    public static final byte left =     1 << 1;
-    public static final byte back =     1 << 2;
-    public static final byte front =    1 << 3;
+    public static final byte east =     1;
+    public static final byte west =     1 << 1;
+    public static final byte north =    1 << 2;
+    public static final byte south =    1 << 3;
     public static final byte top =      1 << 4;
     public static final byte bottom =   1 << 5;
 }

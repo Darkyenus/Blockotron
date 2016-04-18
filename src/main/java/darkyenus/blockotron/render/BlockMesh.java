@@ -72,19 +72,19 @@ public class BlockMesh implements RenderableProvider {
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture texture){
         if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_OFFSETS, texture);
         if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_OFFSETS, texture);
-        if((faceMask & Side.left) != 0) createBlockFace(x, y, z, LEFT_OFFSETS, texture);
-        if((faceMask & Side.right) != 0) createBlockFace(x, y, z, RIGHT_OFFSETS, texture);
-        if((faceMask & Side.back) != 0) createBlockFace(x, y, z, BACK_OFFSETS, texture);
-        if((faceMask & Side.front) != 0) createBlockFace(x, y, z, FRONT_OFFSETS, texture);
+        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, LEFT_OFFSETS, texture);
+        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, RIGHT_OFFSETS, texture);
+        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, BACK_OFFSETS, texture);
+        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, FRONT_OFFSETS, texture);
     }
 
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture top, BlockFaceTexture sides, BlockFaceTexture bottom){
         if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_OFFSETS, top);
         if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_OFFSETS, bottom);
-        if((faceMask & Side.left) != 0) createBlockFace(x, y, z, LEFT_OFFSETS, sides);
-        if((faceMask & Side.right) != 0) createBlockFace(x, y, z, RIGHT_OFFSETS, sides);
-        if((faceMask & Side.back) != 0) createBlockFace(x, y, z, BACK_OFFSETS, sides);
-        if((faceMask & Side.front) != 0) createBlockFace(x, y, z, FRONT_OFFSETS, sides);
+        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, LEFT_OFFSETS, sides);
+        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, RIGHT_OFFSETS, sides);
+        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, BACK_OFFSETS, sides);
+        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, FRONT_OFFSETS, sides);
     }
 
     public void createBlockFace (int x, int y, int z, float[] faceOffsets, BlockFaceTexture texture){

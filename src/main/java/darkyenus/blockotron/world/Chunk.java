@@ -60,16 +60,16 @@ public final class Chunk {
         //Update neighbor occlusion masks
         if(block.transparent){
             if(x > 0){
-                occlusion[coord(x-1, y, z)] &= ~Side.right;
+                occlusion[coord(x-1, y, z)] &= ~Side.east;
             }
             if(x < CHUNK_SIZE-1){
-                occlusion[coord(x+1, y, z)] &= ~Side.left;
+                occlusion[coord(x+1, y, z)] &= ~Side.west;
             }
             if(y > 0){
-                occlusion[coord(x, y-1, z)] &= ~Side.back;
+                occlusion[coord(x, y-1, z)] &= ~Side.north;
             }
             if(y < CHUNK_SIZE-1){
-                occlusion[coord(x, y+1, z)] &= ~Side.front;
+                occlusion[coord(x, y+1, z)] &= ~Side.south;
             }
             if(z > 0){
                 occlusion[coord(x, y, z-1)] &= ~Side.top;
@@ -79,16 +79,16 @@ public final class Chunk {
             }
         } else {
             if(x > 0){
-                occlusion[coord(x-1, y, z)] |= Side.right;
+                occlusion[coord(x-1, y, z)] |= Side.east;
             }
             if(x < CHUNK_SIZE-1){
-                occlusion[coord(x+1, y, z)] |= Side.left;
+                occlusion[coord(x+1, y, z)] |= Side.west;
             }
             if(y > 0){
-                occlusion[coord(x, y-1, z)] |= Side.back;
+                occlusion[coord(x, y-1, z)] |= Side.north;
             }
             if(y < CHUNK_SIZE-1){
-                occlusion[coord(x, y+1, z)] |= Side.front;
+                occlusion[coord(x, y+1, z)] |= Side.south;
             }
             if(z > 0){
                 occlusion[coord(x, y, z-1)] |= Side.top;
@@ -112,22 +112,22 @@ public final class Chunk {
         byte selfOcclusion = 0;
         if(x > 0){
             if(!blocks[coord(x-1, y, z)].transparent){
-                selfOcclusion |= Side.left;
+                selfOcclusion |= Side.west;
             }
         }
         if(x < CHUNK_SIZE-1){
             if(!blocks[coord(x+1, y, z)].transparent){
-                selfOcclusion |= Side.right;
+                selfOcclusion |= Side.east;
             }
         }
         if(y > 0){
             if(!blocks[coord(x, y-1, z)].transparent){
-                selfOcclusion |= Side.front;
+                selfOcclusion |= Side.south;
             }
         }
         if(y < CHUNK_SIZE-1){
             if(!blocks[coord(x, y+1, z)].transparent){
-                selfOcclusion |= Side.back;
+                selfOcclusion |= Side.north;
             }
         }
         if(z > 0){

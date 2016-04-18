@@ -78,6 +78,7 @@ public class GameScreen extends Screen {
                 sb.append("   X: ").append(blockOnRay.getX()).append('\n');
                 sb.append("   Y: ").append(blockOnRay.getY()).append('\n');
                 sb.append("   Z: ").append(blockOnRay.getZ()).append('\n');
+                sb.append(" Side: ").append(blockOnRay.getSide()).append('\n');
             }
 
             batch.begin();
