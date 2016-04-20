@@ -91,22 +91,22 @@ public final class Chunk {
         if(x > 0){
             updateOcclusion(x-1, y, z);
         } else {
-            updateOcclusionAtNeighbor(this.x - 1, y, CHUNK_SIZE-1, y, z);
+            updateOcclusionAtNeighbor(this.x - 1, this.y, CHUNK_SIZE-1, y, z);
         }
         if(x < CHUNK_SIZE-1){
             updateOcclusion(x+1, y, z);
         } else {
-            updateOcclusionAtNeighbor(this.x + 1, y, 0, y, z);
+            updateOcclusionAtNeighbor(this.x + 1, this.y, 0, y, z);
         }
         if(y > 0){
             updateOcclusion(x, y-1, z);
         } else {
-            updateOcclusionAtNeighbor(this.x, y - 1, x, CHUNK_SIZE-1, z);
+            updateOcclusionAtNeighbor(this.x, this.y - 1, x, CHUNK_SIZE-1, z);
         }
         if(y < CHUNK_SIZE-1){
             updateOcclusion(x, y+1, z);
         }else{
-            updateOcclusionAtNeighbor(this.x, y + 1, x, 0, z);
+            updateOcclusionAtNeighbor(this.x, this.y + 1, x, 0, z);
         }
         if(z > 0){
             updateOcclusion(x, y, z-1);
@@ -117,7 +117,7 @@ public final class Chunk {
 
         if(loaded) {
             for (WorldObserver observer : world.observers()) {
-                observer.chunkChanged(this, !old.dynamic || !block.dynamic);
+                observer.blockChanged(this, x, y, z, old, block);
             }
         }
     }
@@ -140,27 +140,35 @@ public final class Chunk {
      */
     private void updateOcclusion(int x, int y, int z){
         final int coord = coord(x, y, z);
+        final byte oldOcclusion = occlusion[coord];
         final Block myself = blocks[coord];
-        byte selfOcclusion = 0;
+        byte newOcclusion = 0;
         if(isFaceVisible(myself, x-1, y, z)){
-            selfOcclusion |= Side.west;
+            newOcclusion |= Side.west;
         }
         if(isFaceVisible(myself, x+1, y, z)){
-            selfOcclusion |= Side.east;
+            newOcclusion |= Side.east;
         }
         if(isFaceVisible(myself, x, y-1, z)){
-            selfOcclusion |= Side.south;
+            newOcclusion |= Side.south;
         }
         if(isFaceVisible(myself, x, y+1, z)){
-            selfOcclusion |= Side.north;
+            newOcclusion |= Side.north;
         }
         if(isFaceVisible(myself, x, y, z-1)){
-            selfOcclusion |= Side.bottom;
+            newOcclusion |= Side.bottom;
         }
         if(isFaceVisible(myself, x, y, z+1)){
-            selfOcclusion |= Side.top;
+            newOcclusion |= Side.top;
         }
-        occlusion[coord] = selfOcclusion;
+        if(newOcclusion != oldOcclusion){
+            this.occlusion[coord] = newOcclusion;
+            if(loaded){
+                for (WorldObserver observer : world.observers()) {
+                    observer.blockOcclusionChanged(this, x, y ,z, oldOcclusion, newOcclusion);
+                }
+            }
+        }
     }
 
     /** @see #updateOcclusion(int, int, int) for rules */

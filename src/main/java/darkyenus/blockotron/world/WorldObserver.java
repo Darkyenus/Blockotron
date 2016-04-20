@@ -12,7 +12,10 @@ public interface WorldObserver {
     void chunkLoaded(Chunk chunk);
 
     /** Called when a block in chunk changes. */
-    void chunkChanged(Chunk chunk, boolean staticBlocks);
+    void blockChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, Block from, Block to);
+
+    /** Called when block's occlusion mask changes. */
+    void blockOcclusionChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, byte from, byte to);
 
     /** Called when previously loaded chunk is unloaded from a world. */
     void chunkUnloaded(Chunk chunk);

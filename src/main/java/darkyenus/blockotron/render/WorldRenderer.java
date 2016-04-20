@@ -20,6 +20,7 @@ import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import darkyenus.blockotron.world.Block;
 import darkyenus.blockotron.world.Chunk;
 import darkyenus.blockotron.world.World;
 import darkyenus.blockotron.world.WorldObserver;
@@ -91,8 +92,15 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
     }
 
     @Override
-    public void chunkChanged(Chunk chunk, boolean staticBlocks) {
-        if(staticBlocks) {
+    public void blockChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, Block from, Block to) {
+        if(!from.dynamic || !to.dynamic) {
+            renderableChunks.get(World.chunkCoordKey(chunk.x, chunk.y)).staticDirty = true;
+        }
+    }
+
+    @Override
+    public void blockOcclusionChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, byte from, byte to) {
+        if(!chunk.getBlock(inChunkX, inChunkY, inChunkZ).dynamic){
             renderableChunks.get(World.chunkCoordKey(chunk.x, chunk.y)).staticDirty = true;
         }
     }
