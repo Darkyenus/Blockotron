@@ -113,6 +113,16 @@ public class World {
         return loadedChunk.getBlock(cx, cy, cz);
     }
 
+    /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
+    public Block getLoadedBlock(int x, int y, int z){
+        final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
+        if(loadedChunk == null)return null;
+        final int cx = inChunkCoordXY(x);
+        final int cy = inChunkCoordXY(y);
+        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return null;
+        return loadedChunk.getBlock(cx, cy, z);
+    }
+
     /** Set the block on given world coordinates to given block.
      * Does nothing if coordinates are invalid. */
     public void setBlock(int x, int y, int z, Block newBlock) {

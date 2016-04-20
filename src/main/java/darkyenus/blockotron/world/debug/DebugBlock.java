@@ -4,6 +4,7 @@ import darkyenus.blockotron.render.BlockFaceTexture;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.RectangleMeshBatch;
 import darkyenus.blockotron.world.Block;
+import darkyenus.blockotron.world.World;
 
 /**
  *
@@ -19,7 +20,7 @@ public class DebugBlock extends Block {
     }
 
     @Override
-    public void render(int x, int y, int z, byte occlusion, RectangleMeshBatch mesh) {
-        mesh.createBlock(x, y, z, (byte)~0, texture);
+    public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {
+        batch.createBlock(drawX, drawY, drawZ, (byte)~0, texture);
     }
 }

@@ -4,6 +4,7 @@ import darkyenus.blockotron.render.BlockFaceTexture;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.RectangleMeshBatch;
 import darkyenus.blockotron.world.Block;
+import darkyenus.blockotron.world.World;
 
 /**
  *
@@ -21,7 +22,11 @@ public class Grass extends Block {
     }
 
     @Override
-    public void render(int x, int y, int z, byte occlusion, RectangleMeshBatch mesh) {
-        mesh.createBlock(x, y, z, occlusion, TOP, SIDE, BOTTOM);
+    public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {
+        if(GRASS.equals(world.getLoadedBlock(x, y, z + 1))) {
+            batch.createBlock(drawX, drawY, drawZ, occlusion, TOP, BOTTOM, BOTTOM);
+        } else {
+            batch.createBlock(drawX, drawY, drawZ, occlusion, TOP, SIDE, BOTTOM);
+        }
     }
 }

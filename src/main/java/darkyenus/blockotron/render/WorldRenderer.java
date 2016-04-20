@@ -154,30 +154,38 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         }
 
         private void rebuildStaticMesh(){
+            final World world = chunk.world;
+            final int worldX = chunk.x * Chunk.CHUNK_SIZE;
+            final int worldY = chunk.y * Chunk.CHUNK_SIZE;
+
             final RectangleMeshBatch batch = this.staticBatch;
             batch.begin();
             chunk.forEachStaticNonAirBlock((cX, cY, cZ, occlusion, block) -> {
                 if(block.transparent){
                     batch.beginTransparent(cX, cY, cZ);
-                    block.render(cX, cY, cZ, occlusion, batch);
+                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
                     batch.endTransparent();
                 } else {
-                    block.render(cX, cY, cZ, occlusion, batch);
+                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
                 }
             });
             batch.end();
         }
 
         private void rebuildDynamicMesh(){
+            final World world = chunk.world;
+            final int worldX = chunk.x * Chunk.CHUNK_SIZE;
+            final int worldY = chunk.y * Chunk.CHUNK_SIZE;
+
             final RectangleMeshBatch batch = this.dynamicBatch;
             batch.begin();
             chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {
                 if(block.transparent){
                     batch.beginTransparent(cX, cY, cZ);
-                    block.render(cX, cY, cZ, occlusion, batch);
+                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
                     batch.endTransparent();
                 } else {
-                    block.render(cX, cY, cZ, occlusion, batch);
+                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
                 }
             });
             batch.end();

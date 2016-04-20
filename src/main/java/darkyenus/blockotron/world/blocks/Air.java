@@ -2,6 +2,7 @@ package darkyenus.blockotron.world.blocks;
 
 import darkyenus.blockotron.render.RectangleMeshBatch;
 import darkyenus.blockotron.world.Block;
+import darkyenus.blockotron.world.World;
 
 /**
  * Special block - absence of a block
@@ -15,5 +16,5 @@ public class Air extends Block {
     }
 
     @Override
-    public void render(int x, int y, int z, byte occlusion, RectangleMeshBatch mesh) {}
+    public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {}
 }

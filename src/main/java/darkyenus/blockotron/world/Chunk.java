@@ -56,7 +56,8 @@ public final class Chunk {
     }
 
     /** Get the occlusion mask of given block.
-     * Undefined behavior if out of bounds. */
+     * Undefined behavior if out of bounds.
+     * @see #occlusion */
     public byte getOcclusionMask(int x, int y, int z){
         return occlusion[coord(x, y, z)];
     }

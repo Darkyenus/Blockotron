@@ -19,5 +19,11 @@ public abstract class Block {
         this.dynamic = dynamic;
     }
 
-    public abstract void render(int x, int y, int z, byte occlusion, RectangleMeshBatch mesh);
+    /** Draw the block in the world.
+     * @param world in which the blocks is being rendered
+     * @param x (y, z) of the block in the world
+     * @param drawX (drawY, drawZ) to pass to the batch
+     * @param occlusion mask of the block. Can be passed directly to the batch. See {@link Chunk#getOcclusionMask(int, int, int)}
+     * @param batch to be used for drawing */
+    public abstract void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch);
 }
