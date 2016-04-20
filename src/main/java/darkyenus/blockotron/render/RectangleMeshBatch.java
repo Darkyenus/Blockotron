@@ -139,22 +139,22 @@ public class RectangleMeshBatch implements RenderableProvider {
      *                 (see {@link darkyenus.blockotron.world.Chunk#getOcclusionMask(int, int, int)})
      * @param texture of all faces */
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture texture) {
-        if((faceMask & Side.east) == 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, texture);
-        if((faceMask & Side.west) == 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, texture);
-        if((faceMask & Side.north) == 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, texture);
-        if((faceMask & Side.south) == 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, texture);
-        if((faceMask & Side.top) == 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, texture);
-        if((faceMask & Side.bottom) == 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, texture);
+        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, texture);
+        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, texture);
+        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, texture);
+        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, texture);
+        if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, texture);
+        if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, texture);
     }
 
     /** @see #createBlock(int, int, int, byte, BlockFaceTexture) */
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture top, BlockFaceTexture sides, BlockFaceTexture bottom) {
-        if((faceMask & Side.east) == 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, sides);
-        if((faceMask & Side.west) == 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, sides);
-        if((faceMask & Side.north) == 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, sides);
-        if((faceMask & Side.south) == 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, sides);
-        if((faceMask & Side.top) == 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, top);
-        if((faceMask & Side.bottom) == 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, bottom);
+        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, sides);
+        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, sides);
+        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, sides);
+        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, sides);
+        if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, top);
+        if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, bottom);
     }
 
     /** Draw a single face of a block. Most blocks should use one of createBlock() methods.

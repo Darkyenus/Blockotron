@@ -85,7 +85,7 @@ public class GameScreen extends Screen {
                                 World.inChunkCoordXY(blockOnRay.getY()),
                                 World.inChunkCoordZ(blockOnRay.getZ()));
                 if(occlusionMask != 0){
-                    sb.append(" Occluded from: ");
+                    sb.append(" Visible from: ");
                     for (Side side : Side.values()) {
                         if((occlusionMask & side.flag) != 0){
                             sb.append(side).append(" ");

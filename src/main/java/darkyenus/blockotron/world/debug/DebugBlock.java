@@ -20,6 +20,6 @@ public class DebugBlock extends Block {
 
     @Override
     public void render(int x, int y, int z, byte occlusion, RectangleMeshBatch mesh) {
-        mesh.createBlock(x, y, z, (byte)0, texture);
+        mesh.createBlock(x, y, z, (byte)~0, texture);
     }
 }

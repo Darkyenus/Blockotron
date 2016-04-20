@@ -28,7 +28,7 @@ public final class Chunk {
      * @see #coord(int, int, int) */
     private final Block[] blocks = new Block[CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT];
     /** Indexing identical to of {@link #blocks}.
-     * For each block, contains which Sides are occluded (= on that side is an opaque block).
+     * For each block, contains which Sides are visible.
      * Byte holds flags from {@link Side} */
     private final byte[] occlusion = new byte[blocks.length];
 
@@ -83,50 +83,36 @@ public final class Chunk {
             }
         }
 
-        final byte[] occlusion = this.occlusion;
-        //Update neighbor occlusion masks
-        if(block.transparent){
-            if(x > 0){
-                occlusion[coord(x-1, y, z)] &= ~Side.east;
-            }
-            if(x < CHUNK_SIZE-1){
-                occlusion[coord(x+1, y, z)] &= ~Side.west;
-            }
-            if(y > 0){
-                occlusion[coord(x, y-1, z)] &= ~Side.north;
-            }
-            if(y < CHUNK_SIZE-1){
-                occlusion[coord(x, y+1, z)] &= ~Side.south;
-            }
-            if(z > 0){
-                occlusion[coord(x, y, z-1)] &= ~Side.top;
-            }
-            if(z < CHUNK_HEIGHT-1){
-                occlusion[coord(x, y, z+1)] &= ~Side.bottom;
-            }
-        } else {
-            if(x > 0){
-                occlusion[coord(x-1, y, z)] |= Side.east;
-            }
-            if(x < CHUNK_SIZE-1){
-                occlusion[coord(x+1, y, z)] |= Side.west;
-            }
-            if(y > 0){
-                occlusion[coord(x, y-1, z)] |= Side.north;
-            }
-            if(y < CHUNK_SIZE-1){
-                occlusion[coord(x, y+1, z)] |= Side.south;
-            }
-            if(z > 0){
-                occlusion[coord(x, y, z-1)] |= Side.top;
-            }
-            if(z < CHUNK_HEIGHT-1){
-                occlusion[coord(x, y, z+1)] |= Side.bottom;
-            }
-        }
-
         //Update own occlusion mask
-        updateSelfOcclusion(x,y,z);
+        updateOcclusion(x,y,z);
+
+        //Update neighbor occlusion masks
+        if(x > 0){
+            updateOcclusion(x-1, y, z);
+        } else {
+            updateOcclusionAtNeighbor(this.x - 1, y, CHUNK_SIZE-1, y, z);
+        }
+        if(x < CHUNK_SIZE-1){
+            updateOcclusion(x+1, y, z);
+        } else {
+            updateOcclusionAtNeighbor(this.x + 1, y, 0, y, z);
+        }
+        if(y > 0){
+            updateOcclusion(x, y-1, z);
+        } else {
+            updateOcclusionAtNeighbor(this.x, y - 1, x, CHUNK_SIZE-1, z);
+        }
+        if(y < CHUNK_SIZE-1){
+            updateOcclusion(x, y+1, z);
+        }else{
+            updateOcclusionAtNeighbor(this.x, y + 1, x, 0, z);
+        }
+        if(z > 0){
+            updateOcclusion(x, y, z-1);
+        }
+        if(z < CHUNK_HEIGHT-1){
+            updateOcclusion(x, y, z+1);
+        }
 
         if(loaded) {
             for (WorldObserver observer : world.observers()) {
@@ -135,39 +121,77 @@ public final class Chunk {
         }
     }
 
-    private void updateSelfOcclusion(int x, int y, int z){
+    /** Utility method for {@link #setBlock(int, int, int, Block)} for updating occlusion masks at neighboring chunks */
+    private void updateOcclusionAtNeighbor(int chunkX, int chunkY, int inChunkX, int inChunkY, int inChunkZ){
+        final Chunk loadedChunk = world.getLoadedChunk(chunkX, chunkY);
+        if(loadedChunk == null)return;
+        loadedChunk.updateOcclusion(inChunkX, inChunkY, inChunkZ);
+    }
+
+    /** Update occlusion at given in-chunk coordinates.
+     * Rules have to consider transparency and kind of block when transparent:
+     * Me -> Neighbor = Side visibility
+     * Opaque -> Opaque =                       occluded
+     * Opaque -> Transparent =                  VISIBLE
+     * Transparent -> Opaque =                  occluded
+     * Transparent -> Same transparent =        occluded
+     * Transparent -> Different transparent =   VISIBLE
+     */
+    private void updateOcclusion(int x, int y, int z){
+        final int coord = coord(x, y, z);
+        final Block myself = blocks[coord];
         byte selfOcclusion = 0;
-        if(x > 0){
-            if(!blocks[coord(x-1, y, z)].transparent){
-                selfOcclusion |= Side.west;
-            }
+        if(isFaceVisible(myself, x-1, y, z)){
+            selfOcclusion |= Side.west;
         }
-        if(x < CHUNK_SIZE-1){
-            if(!blocks[coord(x+1, y, z)].transparent){
-                selfOcclusion |= Side.east;
-            }
+        if(isFaceVisible(myself, x+1, y, z)){
+            selfOcclusion |= Side.east;
         }
-        if(y > 0){
-            if(!blocks[coord(x, y-1, z)].transparent){
-                selfOcclusion |= Side.south;
-            }
+        if(isFaceVisible(myself, x, y-1, z)){
+            selfOcclusion |= Side.south;
         }
-        if(y < CHUNK_SIZE-1){
-            if(!blocks[coord(x, y+1, z)].transparent){
-                selfOcclusion |= Side.north;
-            }
+        if(isFaceVisible(myself, x, y+1, z)){
+            selfOcclusion |= Side.north;
         }
-        if(z > 0){
-            if(!blocks[coord(x, y, z-1)].transparent){
-                selfOcclusion |= Side.bottom;
-            }
+        if(isFaceVisible(myself, x, y, z-1)){
+            selfOcclusion |= Side.bottom;
         }
-        if(z < CHUNK_HEIGHT-1){
-            if(!blocks[coord(x, y, z+1)].transparent){
-                selfOcclusion |= Side.top;
-            }
+        if(isFaceVisible(myself, x, y, z+1)){
+            selfOcclusion |= Side.top;
         }
-        occlusion[coord(x,y,z)] = selfOcclusion;
+        occlusion[coord] = selfOcclusion;
+    }
+
+    /** @see #updateOcclusion(int, int, int) for rules */
+    private boolean isFaceVisible(Block me, int nX, int nY, int nZ){
+        final Block neighbor;
+        if(nX == -1){
+            final Chunk chunk = world.getLoadedChunk(this.x - 1, this.y);
+            if(chunk == null) return true;
+            neighbor = chunk.blocks[coord(CHUNK_SIZE-1, nY, nZ)];
+        } else if(nX == CHUNK_SIZE){
+            final Chunk chunk = world.getLoadedChunk(this.x + 1, this.y);
+            if(chunk == null) return true;
+            neighbor = chunk.blocks[coord(0, nY, nZ)];
+        } else if(nY == -1){
+            final Chunk chunk = world.getLoadedChunk(this.x, this.y - 1);
+            if(chunk == null) return true;
+            neighbor = chunk.blocks[coord(nX, CHUNK_SIZE-1, nZ)];
+        } else if(nY == CHUNK_SIZE){
+            final Chunk chunk = world.getLoadedChunk(this.x, this.y + 1);
+            if(chunk == null) return true;
+            neighbor = chunk.blocks[coord(nX, 0, nZ)];
+        } else if(nZ == -1 || nZ == CHUNK_HEIGHT){
+            return true;
+        } else {
+            neighbor = blocks[coord(nX, nY, nZ)];
+        }
+
+        if(me.transparent){
+            return neighbor.transparent && !me.equals(neighbor);
+        } else {
+            return neighbor.transparent;
+        }
     }
 
     /** Call the iterator with each static non-air block in the chunk, in order from in-chunk 0,0,0 up. */
