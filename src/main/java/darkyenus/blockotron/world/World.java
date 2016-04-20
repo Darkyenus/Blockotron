@@ -54,6 +54,12 @@ public class World {
         return MathUtils.floor(c);
     }
 
+    /** Translate a world x or y coordinate into a chunk-coordinate.
+     * @see Chunk#x */
+    public static int chunkCoord(int xy){
+        return Math.floorDiv(xy, Chunk.CHUNK_SIZE);
+    }
+
     /** Translate a world x or y coordinate into an in-chunk coordinate of its respective chunk.
      * Returned coordinate is always valid.
      * @see #inChunkCoordZ(float) */
@@ -63,11 +69,37 @@ public class World {
         return (int)c;
     }
 
+    /** Translate a world x or y coordinate into an in-chunk coordinate of its respective chunk.
+     * Returned coordinate is always valid.
+     * @see #inChunkCoordZ(float) */
+    public static int inChunkCoordXY(int xy){
+        return Math.floorMod(xy, Chunk.CHUNK_SIZE);
+    }
+
     /** Translate a world z coordinate into an in-chunk coordinate of its respective chunk.
      * Returned coordinate may not be valid if z is < 0 or >= {@link Chunk#CHUNK_HEIGHT}.
      * @see #inChunkCoordXY(float) */
     public static int inChunkCoordZ(float z){
         return (int)z;
+    }
+
+    /** @return block on given world coordinates, retrieves the chunk if not loaded */
+    public Block getBlock(float x, float y, float z) {
+        final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
+        final int cx = inChunkCoordXY(x);
+        final int cy = inChunkCoordXY(y);
+        final int cz = inChunkCoordZ(z);
+        if(cz < 0 || cz >= Chunk.CHUNK_HEIGHT) return null;
+        return chunk.getBlock(cx, cy, cz);
+    }
+
+    /** @return block on given world coordinates, retrieves the chunk if not loaded */
+    public Block getBlock(int x, int y, int z) {
+        final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
+        final int cx = inChunkCoordXY(x);
+        final int cy = inChunkCoordXY(y);
+        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return null;
+        return chunk.getBlock(cx, cy, z);
     }
 
     /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
@@ -79,6 +111,16 @@ public class World {
         final int cz = inChunkCoordZ(z);
         if(cz < 0 || cz >= Chunk.CHUNK_HEIGHT) return null;
         return loadedChunk.getBlock(cx, cy, cz);
+    }
+
+    /** Set the block on given world coordinates to given block.
+     * Does nothing if coordinates are invalid. */
+    public void setBlock(int x, int y, int z, Block newBlock) {
+        final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
+        final int cx = inChunkCoordXY(x);
+        final int cy = inChunkCoordXY(y);
+        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return;
+        chunk.setBlock(cx, cy, z, newBlock);
     }
 
     /** Utility method for block ray-casting. */

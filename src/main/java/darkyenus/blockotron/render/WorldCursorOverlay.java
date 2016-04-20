@@ -1,5 +1,7 @@
 package darkyenus.blockotron.render;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
@@ -12,6 +14,9 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 import darkyenus.blockotron.world.BlockFilter;
 import darkyenus.blockotron.world.World;
+import darkyenus.blockotron.world.blocks.Air;
+import darkyenus.blockotron.world.blocks.Glass;
+import darkyenus.blockotron.world.blocks.Grass;
 
 /**
  * Draws the wireframe cursor over the selected block.
@@ -44,6 +49,15 @@ public class WorldCursorOverlay implements RenderableProvider {
         }else{
             visible = true;
             position.set(target.getX(), target.getY(), target.getZ());
+
+            //DEBUG world editing
+            if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
+                world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, Grass.GRASS);
+            } else if(Gdx.input.isKeyJustPressed(Input.Keys.R)){
+                world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, Glass.GLASS);
+            } else if(Gdx.input.isKeyJustPressed(Input.Keys.F)){
+                world.setBlock(target.getX(), target.getY(), target.getZ(), Air.AIR);
+            }
         }
     }
 
