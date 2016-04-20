@@ -7,10 +7,14 @@ import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.Pool;
 import darkyenus.blockotron.world.Side;
+
+import java.nio.FloatBuffer;
 
 /**
  * Used to dynamically create a Mesh out of textured rectangles.
@@ -27,51 +31,47 @@ public class RectangleMeshBatch implements RenderableProvider {
     );
     private final static int vertexSize = 5;
 
-    private final Material material;
+    private final Material opaqueMaterial, transparentMaterial;
     private final Vector3 worldTranslation = new Vector3();
+    /** Opaque and transparent vertices. Opaque are filled from 0, transparent from the end, but not in reverse. */
     private float[] vertices;
-    /** Max amount of rectangular faces that can fit into the mesh. */
-    private int maxFaces;
+    /** LXYZLXYZ... encoded positions and length of transparent vertices.
+     * L = meshPart.size
+     * X,Y,Z = worldTransform */
+    private float[] transparentMeshPositions;
+    private static final int TRANSPARENT_MESH_POS_STRIDE = 4;
+    /** Max amount of rectangular faces that can fit into the mesh, opaque or transparent */
+    private int maxMeshFaces;
     /** Current amount of rectangular faces in the mesh (or buffer if after begin() but before end()). */
-    private int faces = 0;
+    private int opaqueFaces = 0, transparentFaces = 0, transparentBatches = 0;
+    private final boolean isStatic;
     private Mesh mesh;
+
+    private int tBaseX, tBaseY, tBaseZ;
+    private int batchedTransparent;
+    private boolean drawingTransparent;
 
     /** Note that this is a quite heavy object.
      * @param isStatic true if the mesh is not regenerated each frame/often
-     * @param material of the mesh
-     * @param maxFaces max rectangles to hold, can't draw more */
-    public RectangleMeshBatch(boolean isStatic, Material material, int maxFaces) {
-        this.material = material;
-        this.maxFaces = maxFaces;
-        final int maxIndices = facesToIndices(maxFaces);
-        mesh = new Mesh(isStatic, facesToVertices(maxFaces), maxIndices, attributes);
-        vertices = new float[facesToVertices(maxFaces) * vertexSize];
+     * @param opaqueMaterial of the opaque part of the mesh
+     * @param transparentMaterial of the transparent part of the mesh */
+    public RectangleMeshBatch(boolean isStatic, Material opaqueMaterial, Material transparentMaterial, int initialMaxFaces) {
+        this.isStatic = isStatic;
+        this.opaqueMaterial = opaqueMaterial;
+        this.transparentMaterial = transparentMaterial;
+        //Enlarge to the next power of two for efficiency (kept as is if already POT)
+        initialMaxFaces = MathUtils.nextPowerOfTwo(initialMaxFaces);
+        this.maxMeshFaces = initialMaxFaces;
+
+        final int maxIndices = facesToIndices(initialMaxFaces);
+        mesh = new Mesh(isStatic, facesToVertices(initialMaxFaces), maxIndices, attributes);
+        vertices = new float[facesToVertices(initialMaxFaces) * vertexSize];
         mesh.setIndices(getIndices(maxIndices), 0, maxIndices);
     }
 
     /** Set the world translation of renderables of this mesh */
     public void setWorldTranslation(float x, float y, float z){
         worldTranslation.set(x, y, z);
-    }
-
-    private static short[] indicesCache;
-    /** Since all indices are the same, we generate them once and then serve cached version.
-     * Cached version may be larger than what is requested, so be prepared to handle that. */
-    private short[] getIndices(int length){
-        if(indicesCache != null && indicesCache.length >= length){
-            return indicesCache;
-        }
-        short[] indices = new short[length];
-        short j = 0;
-        for (int i = 0; i < length; i += 6, j += 4) {
-            indices[i] = j;
-            indices[i + 1] = (short)(j + 1);
-            indices[i + 2] = (short)(j + 2);
-            indices[i + 3] = (short)(j + 2);
-            indices[i + 4] = (short)(j + 3);
-            indices[i + 5] = j;
-        }
-        return indicesCache = indices;
     }
 
     /** Return the amount of vertices that corresponds to given amount of rectangular faces. */
@@ -87,7 +87,50 @@ public class RectangleMeshBatch implements RenderableProvider {
     /** Clear everything rendered and begin to add new shapes.
      * Do not call if already called and not {@link #end()}ed. */
     public void begin(){
-        faces = 0;
+        opaqueFaces = 0;
+        transparentFaces = 0;
+        transparentBatches = 0;
+    }
+
+    /** Faces drawn between begin/endTransparent will be ordered as if they were on these coordinates. */
+    public void beginTransparent(int baseX, int baseY, int baseZ) {
+        assert !drawingTransparent;
+        tBaseX = baseX;
+        tBaseY = baseY;
+        tBaseZ = baseZ;
+        batchedTransparent = 0;
+        drawingTransparent = true;
+    }
+
+    public void endTransparent() {
+        assert drawingTransparent;
+        drawingTransparent = false;
+        if(batchedTransparent > 0){
+            int off = transparentBatches * TRANSPARENT_MESH_POS_STRIDE;
+            final int additionalLength = TRANSPARENT_MESH_POS_STRIDE;
+
+            final float[] tMePos;
+
+            //Resize transparentMeshPositions if needed
+            if(transparentMeshPositions == null){
+                assert off == 0;
+                tMePos = transparentMeshPositions = new float[MathUtils.nextPowerOfTwo(additionalLength)];
+            } else if (transparentMeshPositions.length < off + additionalLength){
+                final float[] newTransparentMeshPositions = new float[MathUtils.nextPowerOfTwo(off + additionalLength)];
+                System.arraycopy(transparentMeshPositions, 0, newTransparentMeshPositions, 0, off);
+                tMePos = transparentMeshPositions = newTransparentMeshPositions;
+            } else {
+                tMePos = transparentMeshPositions;
+            }
+
+            tMePos[off++] = facesToIndices(batchedTransparent);
+            tMePos[off++] = tBaseX;
+            tMePos[off++] = tBaseY;
+            tMePos[off] = tBaseZ;
+
+            batchedTransparent = 0;
+            transparentBatches++;
+        }
     }
 
     /** Draw a block at given world coordinates.
@@ -95,7 +138,7 @@ public class RectangleMeshBatch implements RenderableProvider {
      * @param faceMask occlusion mask, only faces which are not occluded will be drawn
      *                 (see {@link darkyenus.blockotron.world.Chunk#getOcclusionMask(int, int, int)})
      * @param texture of all faces */
-    public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture texture){
+    public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture texture) {
         if((faceMask & Side.east) == 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, texture);
         if((faceMask & Side.west) == 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, texture);
         if((faceMask & Side.north) == 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, texture);
@@ -105,7 +148,7 @@ public class RectangleMeshBatch implements RenderableProvider {
     }
 
     /** @see #createBlock(int, int, int, byte, BlockFaceTexture) */
-    public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture top, BlockFaceTexture sides, BlockFaceTexture bottom){
+    public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture top, BlockFaceTexture sides, BlockFaceTexture bottom) {
         if((faceMask & Side.east) == 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, sides);
         if((faceMask & Side.west) == 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, sides);
         if((faceMask & Side.north) == 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, sides);
@@ -120,13 +163,24 @@ public class RectangleMeshBatch implements RenderableProvider {
      * @param faceOffsets offsets of the face vertices to the block origin (see {@link #TOP_FACE_OFFSETS} etc.)
      * @param texture to be drawn on the face */
     public void createBlockFace (int x, int y, int z, float[] faceOffsets, BlockFaceTexture texture){
-        if(faces == maxFaces){
-            return;
+        if(opaqueFaces + transparentFaces + 1 > maxMeshFaces){
+            resizeMesh(opaqueFaces + transparentFaces + 1);
         }
 
         //Vertices
-        int vertexOffset = facesToVertices(faces) * vertexSize;
         final float[] v = vertices;
+        int vertexOffset;
+        if(drawingTransparent){
+            vertexOffset = v.length - (facesToVertices(transparentFaces + 1) * vertexSize);
+            transparentFaces++;
+            batchedTransparent++;
+            x -= tBaseX;
+            y -= tBaseY;
+            z -= tBaseZ;
+        } else {
+            vertexOffset = facesToVertices(opaqueFaces) * vertexSize;
+            opaqueFaces++;
+        }
 
         //Fill vertices
         int faceOffset = 0;
@@ -153,33 +207,103 @@ public class RectangleMeshBatch implements RenderableProvider {
         v[vertexOffset++] = z + faceOffsets[faceOffset];
         v[vertexOffset++] = texture.u;
         v[vertexOffset] = texture.v2;
-
-        faces++;
     }
 
     /** Update the mesh and end the edit block. */
     public void end(){
-        final int verticesSize = facesToVertices(faces) * 6;
+        final int opaqueVerticesSize = facesToVertices(opaqueFaces) * vertexSize;
+        final int transparentVerticesSize = facesToVertices(transparentFaces) * vertexSize;
 
-        assert verticesSize <= vertices.length : "Somehow generated more vertices than can fit: "+verticesSize+" > "+vertices.length;
-        assert (mesh.getMaxVertices() * vertexSize) >= verticesSize : "Mesh can't hold enough vertices: " + mesh.getMaxVertices() + " * " + vertexSize + " < " + verticesSize;
+        // Assign vertices
+        // This has to be done manually, because it is quite advanced usage
+        final FloatBuffer vertexBuf = mesh.getVerticesBuffer();
+        // Assign opaque vertices from beginning of vertices to beginning of vertexBuf
+        if(opaqueVerticesSize != 0){
+            BufferUtils.copy(vertices, vertexBuf, opaqueVerticesSize, 0);
+        }
+        // Assign transparent vertices from the end of vertices buffer to the position after opaque vertices in vertexBuf
+        if(transparentVerticesSize != 0){
+            vertexBuf.position(opaqueVerticesSize);
+            BufferUtils.copy(vertices, vertices.length - transparentVerticesSize, vertexBuf, transparentVerticesSize);
+        }
+    }
 
-        mesh.setVertices(vertices, 0, verticesSize);
+    /** Enlarge the buffer in power of two sizes until this value (in faces) */
+    private static final int POT_STEPS_THRESHOLD = 1024;
+    /** When POT_STEPS_THRESHOLD is reached, enlarge the mesh in steps this big. */
+    private static final int POST_POT_SIZE_STEPS = 512;
+
+    private void resizeMesh(int totalFacesRequired){
+        int newMaxMeshFaces = maxMeshFaces;
+        while(newMaxMeshFaces < totalFacesRequired && newMaxMeshFaces < POT_STEPS_THRESHOLD){
+            newMaxMeshFaces = newMaxMeshFaces << 1;
+        }
+        while(newMaxMeshFaces < totalFacesRequired){
+            newMaxMeshFaces += POST_POT_SIZE_STEPS;
+        }
+
+        //System.out.println("Resizing mesh from "+maxMeshFaces+" to "+newMaxMeshFaces);
+
+        final int maxIndices = facesToIndices(newMaxMeshFaces);
+        final Mesh newMesh = new Mesh(isStatic, facesToVertices(newMaxMeshFaces), maxIndices, attributes);
+        final float[] newVertices = new float[facesToVertices(newMaxMeshFaces) * vertexSize];
+        newMesh.setIndices(getIndices(maxIndices), 0, maxIndices);
+
+        //Copy existing data
+        final int opaqueVerticesSize = facesToVertices(opaqueFaces) * vertexSize;
+        final int transparentVerticesSize = facesToVertices(transparentFaces) * vertexSize;
+
+        final float[] oldVertices = this.vertices;
+        System.arraycopy(oldVertices, 0, newVertices, 0, opaqueVerticesSize);
+        System.arraycopy(oldVertices, oldVertices.length - transparentVerticesSize, newVertices, newVertices.length - transparentVerticesSize, transparentVerticesSize);
+
+        //Dispose old and replace with new data
+        this.mesh.dispose();
+        this.mesh = newMesh;
+        this.vertices = newVertices;
+        this.maxMeshFaces = newMaxMeshFaces;
     }
 
     @Override
     public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
-        final int indices = facesToIndices(faces);
-        if(indices == 0)return;
-        final Renderable r = pool.obtain();
-        r.worldTransform.setToTranslation(worldTranslation);
-        r.meshPart.mesh = mesh;
-        r.meshPart.offset = 0;
-        r.meshPart.primitiveType = GL20.GL_TRIANGLES;
-        r.meshPart.size = indices;
-        r.material = material;
-        r.userData = null;
-        renderables.add(r);
+        //Opaque
+        final int opaqueIndicesSize = facesToIndices(opaqueFaces);
+        if(opaqueIndicesSize != 0){
+            final Renderable r = pool.obtain();
+            r.worldTransform.setToTranslation(worldTranslation);
+            r.meshPart.mesh = mesh;
+            r.meshPart.offset = 0;
+            r.meshPart.primitiveType = GL20.GL_TRIANGLES;
+            r.meshPart.size = opaqueIndicesSize;
+            r.material = opaqueMaterial;
+            r.userData = null;
+            renderables.add(r);
+        }
+        //Transparent
+        final int transparentBatches = this.transparentBatches;
+        if(transparentBatches != 0){
+            final int transparentIndicesSize = facesToIndices(transparentFaces);
+            final float[] transparentMeshPositions = this.transparentMeshPositions;
+
+            int baseOffset = opaqueIndicesSize + transparentIndicesSize;
+
+            for (int batch = 0; batch < transparentBatches; batch++) {
+                final Renderable r = pool.obtain();
+                r.worldTransform.setToTranslation(
+                        transparentMeshPositions[(batch << 2) + 1],
+                        transparentMeshPositions[(batch << 2) + 2],
+                        transparentMeshPositions[(batch << 2) + 3]).translate(worldTranslation);
+                r.meshPart.mesh = mesh;
+                r.meshPart.primitiveType = GL20.GL_TRIANGLES;
+                final int size = (int) transparentMeshPositions[batch << 2];
+                baseOffset -= size;
+                r.meshPart.offset = baseOffset;
+                r.meshPart.size = size;
+                r.material = transparentMaterial;
+                r.userData = null;
+                renderables.add(r);
+            }
+        }
     }
 
     /** Release mesh. Instance can't be used anymore after this is called. */
@@ -228,4 +352,24 @@ public class RectangleMeshBatch implements RenderableProvider {
             1, 0, 0,
             0, 0, 0
     };
+
+    private static short[] indicesCache;
+    /** Since all indices are the same, we generate them once and then serve cached version.
+     * Cached version may be larger than what is requested, so be prepared to handle that. */
+    private static short[] getIndices(int length){
+        if(indicesCache != null && indicesCache.length >= length){
+            return indicesCache;
+        }
+        short[] indices = new short[length];
+        short j = 0;
+        for (int i = 0; i < length; i += 6, j += 4) {
+            indices[i] = j;
+            indices[i + 1] = (short)(j + 1);
+            indices[i + 2] = (short)(j + 2);
+            indices[i + 3] = (short)(j + 2);
+            indices[i + 4] = (short)(j + 3);
+            indices[i + 5] = j;
+        }
+        return indicesCache = indices;
+    }
 }

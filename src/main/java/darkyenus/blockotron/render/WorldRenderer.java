@@ -133,7 +133,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
         private final Chunk chunk;
         private final BoundingBox boundingBox = new BoundingBox();
-        private final RectangleMeshBatch staticOpaque, staticTransparent, dynamicOpaque, dynamicTransparent;
+        private final RectangleMeshBatch staticBatch, dynamicBatch;
 
         private boolean staticDirty = true;
 
@@ -142,48 +142,45 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             boundingBox.min.set(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
             boundingBox.max.set(boundingBox.min).add(Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_HEIGHT);
 
-            staticOpaque = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, 2 << 12);
-            staticOpaque.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
-            staticTransparent = new RectangleMeshBatch(true, BlockFaces.transparentMaterial, 2 << 8);
-            staticTransparent.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
-            dynamicOpaque = new RectangleMeshBatch(false, BlockFaces.opaqueMaterial, 2 << 8);
-            dynamicOpaque.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
-            dynamicTransparent = new RectangleMeshBatch(false, BlockFaces.transparentMaterial, 2 << 8);
-            dynamicTransparent.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
+            staticBatch = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 10);
+            dynamicBatch = new RectangleMeshBatch(false, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 8);
+            staticBatch.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
+            dynamicBatch.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
         }
 
-        private void dispose(){
-            staticOpaque.dispose();
-            staticTransparent.dispose();
-            dynamicOpaque.dispose();
-            dynamicTransparent.dispose();
+        private void dispose() {
+            staticBatch.dispose();
+            dynamicBatch.dispose();
         }
 
         private void rebuildStaticMesh(){
-            final RectangleMeshBatch staticOpaque = this.staticOpaque;
-            final RectangleMeshBatch staticTransparent = this.staticTransparent;
-            staticOpaque.begin();
-            staticTransparent.begin();
-            int[] blocks = {0};
+            final RectangleMeshBatch batch = this.staticBatch;
+            batch.begin();
             chunk.forEachStaticNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                block.render(cX, cY, cZ, occlusion, block.transparent ? staticTransparent : staticOpaque);
-                blocks[0]++;
+                if(block.transparent){
+                    batch.beginTransparent(cX, cY, cZ);
+                    block.render(cX, cY, cZ, occlusion, batch);
+                    batch.endTransparent();
+                } else {
+                    block.render(cX, cY, cZ, occlusion, batch);
+                }
             });
-            staticOpaque.end();
-            staticTransparent.end();
+            batch.end();
         }
 
         private void rebuildDynamicMesh(){
-            final RectangleMeshBatch dynamicOpaque = this.dynamicOpaque;
-            final RectangleMeshBatch dynamicTransparent = this.dynamicTransparent;
-            dynamicOpaque.begin();
-            dynamicTransparent.begin();
+            final RectangleMeshBatch batch = this.dynamicBatch;
+            batch.begin();
             chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                if (!block.dynamic) return;
-                block.render(cX, cY, cZ, occlusion, block.transparent ? dynamicTransparent : dynamicOpaque);
+                if(block.transparent){
+                    batch.beginTransparent(cX, cY, cZ);
+                    block.render(cX, cY, cZ, occlusion, batch);
+                    batch.endTransparent();
+                } else {
+                    block.render(cX, cY, cZ, occlusion, batch);
+                }
             });
-            dynamicOpaque.end();
-            dynamicTransparent.end();
+            batch.end();
         }
 
         @Override
@@ -194,10 +191,8 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             }
             rebuildDynamicMesh();
 
-            staticOpaque.getRenderables(renderables, pool);
-            staticTransparent.getRenderables(renderables, pool);
-            dynamicOpaque.getRenderables(renderables, pool);
-            dynamicTransparent.getRenderables(renderables, pool);
+            staticBatch.getRenderables(renderables, pool);
+            dynamicBatch.getRenderables(renderables, pool);
         }
     }
 }
