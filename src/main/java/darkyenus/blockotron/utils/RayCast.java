@@ -59,9 +59,9 @@ public final class RayCast {
          * <http://www.cse.yorku.ca/~amana/research/grid.pdf>
          * <http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.3443> */
 
-        float stepX = Math.signum(directionX);
-        float stepY = Math.signum(directionY);
-        float stepZ = Math.signum(directionZ);
+        int stepX = (int)Math.signum(directionX);
+        int stepY = (int)Math.signum(directionY);
+        int stepZ = (int)Math.signum(directionZ);
         float tDeltaX = stepX / directionX;
         float tDeltaY = stepY / directionY;
         float tDeltaZ = stepZ / directionZ;
@@ -69,16 +69,16 @@ public final class RayCast {
         float tMaxY = intBound(originY, directionY);
         float tMaxZ = intBound(originZ, directionZ);
 
-        float x = MathUtils.floor(originX);
-        float y = MathUtils.floor(originY);
-        float z = MathUtils.floor(originZ);
+        int x = MathUtils.floor(originX);
+        int y = MathUtils.floor(originY);
+        int z = MathUtils.floor(originZ);
 
         float t = 0;
 
         Side side = null;
 
         for (;;) {
-            if(listener.found(x, y, z, side)){
+            if(listener.found(x, y, z, t, side)){
                 return t;
             }
 
@@ -130,10 +130,10 @@ public final class RayCast {
 
     public interface RayCastListener {
         /** Called when rayCast crosses block boundary or to check origin.
-         *  @param x (+y, z) hit points on the next block
-         *  @param side of impact, collision surface normal. Null if this is the first block.
-         *  @return true to complete the search, false to continue searching */
-        boolean found(float x, float y, float z, Side side);
+         * @param x (+y, z) position of the block
+         * @param t distance travelled by the ray to hit this
+         * @param side of impact, collision surface normal. Null if this is the first block.  @return true to complete the search, false to continue searching */
+        boolean found(int x, int y, int z, float t, Side side);
     }
 
 

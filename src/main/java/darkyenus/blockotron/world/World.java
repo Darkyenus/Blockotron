@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
+import darkyenus.blockotron.utils.BlockBoundingBox;
 import darkyenus.blockotron.utils.RayCast;
 
 /**
@@ -144,7 +145,7 @@ public final class World {
      * NOTE: Returned instance is the same for each invocation (for GC reasons), so do not keep it around! */
 	public RayCastResult getBlockOnRay (Vector3 origin, Vector3 direction, float maxDistance, BlockFilter filter) {
         final RayCastResult result = getBlockOnRay_TMP;
-        result.reset(filter);
+        result.reset(filter, origin, direction);
         RayCast.gridRayCast(origin, direction, maxDistance, result);
         if(result.block == null){
             return null;
@@ -173,6 +174,8 @@ public final class World {
     /** Result of block ray-casting methods. */
     public final class RayCastResult implements RayCast.RayCastListener {
         private BlockFilter filter;
+        private final Vector3 origin = new Vector3();
+        private final Vector3 direction = new Vector3();
 
         private Block block;
         private Side side;
@@ -206,20 +209,34 @@ public final class World {
             return z;
         }
 
-        protected void reset(BlockFilter filter){
+        protected void reset(BlockFilter filter, Vector3 origin, Vector3 direction){
             this.block = null;
             this.filter = filter;
+            this.origin.set(origin);
+            this.direction.set(direction);
         }
 
         @Override
-        public boolean found(float x, float y, float z, Side side) {
+        public boolean found(int x, int y, int z, float t, Side side) {
             final Block block = getLoadedBlock(x, y, z);
             if (block == null) return true;//Were done
             if (filter.accepts(block)) {
+                //Check hit box (unit hit box is always right)
+                BlockBoundingBox hitBox = block.hitBox;
+                if(hitBox != BlockBoundingBox.UNIT_BOUNDING_BOX){
+                    final Vector3 origin = this.origin;
+                    final Vector3 direction = this.direction;
+
+					if (!hitBox.intersectsRay(origin.x - x, origin.y - y, origin.z - z, direction.x, direction.y, direction.z)) {
+						// Does not hit the custom hit box, keep searching
+						return false;
+					}
+                }
+
                 this.block = block;
-                this.x = MathUtils.floor(x);
-                this.y = MathUtils.floor(y);
-                this.z = MathUtils.floor(z);
+                this.x = x;
+                this.y = y;
+                this.z = z;
                 this.side = side;
                 return true;//Done
             }
