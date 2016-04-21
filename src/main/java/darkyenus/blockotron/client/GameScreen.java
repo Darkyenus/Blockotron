@@ -3,10 +3,12 @@ package darkyenus.blockotron.client;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.utils.FirstPersonCameraController;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.WorldRenderer;
 import darkyenus.blockotron.world.*;
@@ -21,6 +23,7 @@ public class GameScreen extends Screen {
     private World world;
 
     private FirstPersonCameraController controller;
+    private ShapeRenderer shapeRenderer;
     private boolean debugOverlay = false;
 
     @Override
@@ -32,6 +35,7 @@ public class GameScreen extends Screen {
 
             controller = new FirstPersonCameraController(renderer.camera);
             Gdx.input.setInputProcessor(controller);
+            shapeRenderer = new ShapeRenderer();
         }
     }
 
@@ -98,6 +102,18 @@ public class GameScreen extends Screen {
             batch.begin();
             font.draw(batch, sb, 5, Gdx.graphics.getHeight() - 5);
             batch.end();
+        }
+
+        { //DEBUG: Draw crosshair
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.WHITE);
+            float hW = Gdx.graphics.getWidth() * 0.5f;
+            float hH = Gdx.graphics.getHeight() * 0.5f;
+            float thickness = 1f;
+            float size = 6f;
+            shapeRenderer.rect(hW - thickness, hH - size, thickness * 2f, size * 2f);
+            shapeRenderer.rect(hW - size, hH - thickness, size * 2f, thickness * 2f);
+            shapeRenderer.end();
         }
     }
 }
