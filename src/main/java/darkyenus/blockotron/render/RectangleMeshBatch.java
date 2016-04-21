@@ -209,6 +209,60 @@ public class RectangleMeshBatch implements RenderableProvider {
         v[vertexOffset] = texture.v2;
     }
 
+    /** Draw a single face of a block. Advanced parameters.
+     * Must be called between begin() and end().
+     * @param x (+ y,z) world coordinates of the block
+     * @param faceOffsets offsets of the face vertices to the block origin (see {@link #TOP_FACE_OFFSETS} etc.)
+     * @param texture to be drawn on the face
+     * @param sclX (+ sclY, sclZ) scale of the face offsets */
+    public void createBlockFace (float x, float y, float z, float[] faceOffsets, BlockFaceTexture texture,
+                                 float sclX, float sclY, float sclZ){
+        if(opaqueFaces + transparentFaces + 1 > maxMeshFaces){
+            resizeMesh(opaqueFaces + transparentFaces + 1);
+        }
+
+        //Vertices
+        final float[] v = vertices;
+        int vertexOffset;
+        if(drawingTransparent){
+            vertexOffset = v.length - (facesToVertices(transparentFaces + 1) * vertexSize);
+            transparentFaces++;
+            batchedTransparent++;
+            x -= tBaseX;
+            y -= tBaseY;
+            z -= tBaseZ;
+        } else {
+            vertexOffset = facesToVertices(opaqueFaces) * vertexSize;
+            opaqueFaces++;
+        }
+
+        //Fill vertices
+        int faceOffset = 0;
+        v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
+        v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
+        v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
+        v[vertexOffset++] = texture.u2;
+        v[vertexOffset++] = texture.v2;
+
+        v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
+        v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
+        v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
+        v[vertexOffset++] = texture.u2;
+        v[vertexOffset++] = texture.v;
+
+        v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
+        v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
+        v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
+        v[vertexOffset++] = texture.u;
+        v[vertexOffset++] = texture.v;
+
+        v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
+        v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
+        v[vertexOffset++] = z + faceOffsets[faceOffset] * sclZ;
+        v[vertexOffset++] = texture.u;
+        v[vertexOffset] = texture.v2;
+    }
+
     /** Update the mesh and end the edit block. */
     public void end(){
         final int opaqueVerticesSize = facesToVertices(opaqueFaces) * vertexSize;

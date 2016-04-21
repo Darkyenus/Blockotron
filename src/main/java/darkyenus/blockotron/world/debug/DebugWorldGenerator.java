@@ -1,6 +1,7 @@
 package darkyenus.blockotron.world.debug;
 
 import darkyenus.blockotron.world.Chunk;
+import darkyenus.blockotron.world.blocks.Flowerpot;
 import darkyenus.blockotron.world.blocks.Glass;
 import darkyenus.blockotron.world.blocks.Grass;
 import darkyenus.blockotron.world.generator.WorldGenerator;
@@ -34,5 +35,6 @@ public class DebugWorldGenerator implements WorldGenerator {
         chunk.setBlock(7, 5, 15, Glass.GLASS);
         chunk.setBlock(7, 5, 16, Glass.GLASS);
         chunk.setBlock(7, 5, 17, Glass.GLASS);
+        chunk.setBlock(7, 5, 18, Flowerpot.FLOWERPOT);
     }
 }

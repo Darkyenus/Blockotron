@@ -4,12 +4,13 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
+import darkyenus.blockotron.utils.RayCast;
 
 /**
  * Holds all data of single world, either directly or through {@link Chunk}s.
  * Also serves to route various information and behavior to its {@link #observers}.
  */
-public class World {
+public final class World {
 
     private final LongMap<Chunk> chunks = new LongMap<>();
     private final ChunkProvider chunkProvider;
@@ -133,18 +134,6 @@ public class World {
         chunk.setBlock(cx, cy, z, newBlock);
     }
 
-    /** Utility method for block ray-casting. */
-    private static float intBound(float s, float ds) {
-        // Find the smallest positive t such that s+t*ds is an integer.
-        if(ds < 0){
-            s = -s;
-            ds = -ds;
-        }
-        //Positive modulo: s % 1f
-        s = s - MathUtils.floor(s);
-        return (1f - s)/ds;
-    }
-
     /** Instance of return value of getBlockOnRay, for GC reasons. */
     private final RayCastResult getBlockOnRay_TMP = new RayCastResult();
     /** Cast a ray from given origin (world coordinated) in given direction (must be normalized)
@@ -154,71 +143,14 @@ public class World {
      * When successful returns instance of RayCastResult. Null when for any reason unsuccessful.
      * NOTE: Returned instance is the same for each invocation (for GC reasons), so do not keep it around! */
 	public RayCastResult getBlockOnRay (Vector3 origin, Vector3 direction, float maxDistance, BlockFilter filter) {
-        // http://gamedev.stackexchange.com/questions/47362/cast-ray-to-select-block-in-voxel-game
-        /* Algorithm derived from:
-         * https://github.com/kpreid/cubes/blob/c5e61fa22cb7f9ba03cd9f22e5327d738ec93969/world.js#L307
-         * Copyright 2011-2012 Kevin Reid under the terms of the MIT License <http://opensource.org/licenses/MIT>
-         * Based on:
-         * "A Fast Voxel Traversal Algorithm for Ray Tracing"
-         * by John Amanatides and Andrew Woo, 1987
-         * <http://www.cse.yorku.ca/~amana/research/grid.pdf>
-         * <http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.3443> */
-
-		float stepX = Math.signum(direction.x);
-		float stepY = Math.signum(direction.y);
-		float stepZ = Math.signum(direction.z);
-		float tDeltaX = stepX / direction.x;
-		float tDeltaY = stepY / direction.y;
-		float tDeltaZ = stepZ / direction.z;
-		float tMaxX = intBound(origin.x, direction.x);
-		float tMaxY = intBound(origin.y, direction.y);
-		float tMaxZ = intBound(origin.z, direction.z);
-
-		float x = MathUtils.floor(origin.x);
-		float y = MathUtils.floor(origin.y);
-		float z = MathUtils.floor(origin.z);
-
-        Side side = null;
-
-		for (;;) {
-			final Block block = getLoadedBlock(x, y, z);
-			if (block == null) return null;
-			if (filter.accepts(block)) {
-                final RayCastResult result = getBlockOnRay_TMP;
-                result.block = block;
-                result.x = MathUtils.floor(x);
-                result.y = MathUtils.floor(y);
-                result.z = MathUtils.floor(z);
-                result.side = side;
-                return result;
-            }
-
-			if (tMaxX < tMaxY) {
-				if (tMaxX < tMaxZ) {
-                    if(tMaxX > maxDistance) return null;
-					x += stepX;
-					tMaxX += tDeltaX;
-                    side = stepX < 0 ? Side.EAST : Side.WEST;
-				} else {
-                    if(tMaxZ > maxDistance) return null;
-					z += stepZ;
-					tMaxZ += tDeltaZ;
-                    side = stepZ < 0 ? Side.TOP : Side.BOTTOM;
-				}
-			} else {
-				if (tMaxY < tMaxZ) {
-                    if(tMaxY > maxDistance) return null;
-					y += stepY;
-					tMaxY += tDeltaY;
-                    side = stepY < 0 ? Side.NORTH : Side.SOUTH;
-				} else {
-                    if(tMaxZ > maxDistance) return null;
-                    z += stepZ;
-                    tMaxZ += tDeltaZ;
-                    side = stepZ < 0 ? Side.TOP : Side.BOTTOM;
-				}
-			}
-		}
+        final RayCastResult result = getBlockOnRay_TMP;
+        result.reset(filter);
+        RayCast.gridRayCast(origin, direction, maxDistance, result);
+        if(result.block == null){
+            return null;
+        } else {
+            return result;
+        }
 	}
 
     /** Can't be removed.
@@ -239,10 +171,15 @@ public class World {
     }
 
     /** Result of block ray-casting methods. */
-    public static final class RayCastResult {
+    public final class RayCastResult implements RayCast.RayCastListener {
+        private BlockFilter filter;
+
         private Block block;
         private Side side;
         private int x,y,z;
+
+        private RayCastResult() {
+        }
 
         /** Found block. Never null. */
         public Block getBlock() {
@@ -267,6 +204,26 @@ public class World {
         /** World coordinate of found block. */
         public int getZ() {
             return z;
+        }
+
+        protected void reset(BlockFilter filter){
+            this.block = null;
+            this.filter = filter;
+        }
+
+        @Override
+        public boolean found(float x, float y, float z, Side side) {
+            final Block block = getLoadedBlock(x, y, z);
+            if (block == null) return true;//Were done
+            if (filter.accepts(block)) {
+                this.block = block;
+                this.x = MathUtils.floor(x);
+                this.y = MathUtils.floor(y);
+                this.z = MathUtils.floor(z);
+                this.side = side;
+                return true;//Done
+            }
+            return false;//Keep searching
         }
     }
 }

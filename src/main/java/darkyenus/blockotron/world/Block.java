@@ -1,6 +1,7 @@
 package darkyenus.blockotron.world;
 
 import darkyenus.blockotron.render.RectangleMeshBatch;
+import darkyenus.blockotron.utils.BlockBoundingBox;
 
 /**
  *
@@ -10,13 +11,27 @@ public abstract class Block {
     public final String id;
     /** Render: Does have transparent textures/sides? */
     public final boolean transparent;
+    /** Render: Does this completely obscure faces of neighbors? */
+    public final boolean occluding;
     /** Render: Does need to be rendered each frame? (Is it animated?) (static blocks are buffered) */
     public final boolean dynamic;
+    /** Non-null collision bounding block of this block. */
+    public final BlockBoundingBox hitBox;
 
-    protected Block(String id, boolean transparent, boolean dynamic) {
+    protected Block(String id, boolean transparent, boolean occluding, boolean dynamic) {
         this.id = id;
         this.transparent = transparent;
+        this.occluding = occluding;
         this.dynamic = dynamic;
+        this.hitBox = BlockBoundingBox.UNIT_BOUNDING_BOX;
+    }
+
+    protected Block(String id, boolean transparent, boolean occluding, boolean dynamic, BlockBoundingBox hitBox) {
+        this.id = id;
+        this.transparent = transparent;
+        this.occluding = occluding;
+        this.dynamic = dynamic;
+        this.hitBox = hitBox;
     }
 
     /** Draw the block in the world.

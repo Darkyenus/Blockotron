@@ -129,15 +129,7 @@ public final class Chunk {
         loadedChunk.updateOcclusion(inChunkX, inChunkY, inChunkZ);
     }
 
-    /** Update occlusion at given in-chunk coordinates.
-     * Rules have to consider transparency and kind of block when transparent:
-     * Me -> Neighbor = Side visibility
-     * Opaque -> Opaque =                       occluded
-     * Opaque -> Transparent =                  VISIBLE
-     * Transparent -> Opaque =                  occluded
-     * Transparent -> Same transparent =        occluded
-     * Transparent -> Different transparent =   VISIBLE
-     */
+    /** Update occlusion at given in-chunk coordinates. */
     private void updateOcclusion(int x, int y, int z){
         final int coord = coord(x, y, z);
         final byte oldOcclusion = occlusion[coord];
@@ -171,8 +163,19 @@ public final class Chunk {
         }
     }
 
-    /** @see #updateOcclusion(int, int, int) for rules */
+    /** Determine if my face is visible to the neighbor at given coordinates.
+     * Rules have to consider transparency and kind of block when transparent:
+     * Me -> Neighbor = Side visibility
+     * Non-occluding -> * =                     VISIBLE
+     * * -> Non-occluding =                     VISIBLE
+     * Opaque -> Opaque =                       occluded
+     * Opaque -> Transparent =                  VISIBLE
+     * Transparent -> Opaque =                  occluded
+     * Transparent -> Same transparent =        occluded
+     * Transparent -> Different transparent =   VISIBLE */
     private boolean isFaceVisible(Block me, int nX, int nY, int nZ){
+        if(!me.occluding) return true;
+
         final Block neighbor;
         if(nX == -1){
             final Chunk chunk = world.getLoadedChunk(this.x - 1, this.y);
@@ -195,6 +198,8 @@ public final class Chunk {
         } else {
             neighbor = blocks[coord(nX, nY, nZ)];
         }
+
+        if(!neighbor.occluding) return true;
 
         if(me.transparent){
             return neighbor.transparent && !me.equals(neighbor);

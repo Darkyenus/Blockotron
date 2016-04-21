@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
+import darkyenus.blockotron.utils.BlockBoundingBox;
 import darkyenus.blockotron.world.BlockFilter;
 import darkyenus.blockotron.world.World;
 import darkyenus.blockotron.world.blocks.Air;
@@ -28,6 +29,7 @@ public class WorldCursorOverlay implements RenderableProvider {
 
     private boolean visible = false;
     private final Vector3 position = new Vector3();
+    private final Vector3 scale = new Vector3();
 
     private static final Integer CURSOR_RENDERABLE_BIAS = 100;
 
@@ -48,7 +50,9 @@ public class WorldCursorOverlay implements RenderableProvider {
             visible = false;
         }else{
             visible = true;
-            position.set(target.getX(), target.getY(), target.getZ());
+            BlockBoundingBox hitBox = target.getBlock().hitBox;
+            position.set(target.getX(), target.getY(), target.getZ()).add(hitBox.offsetX, hitBox.offsetY, hitBox.offsetZ);
+            scale.set(hitBox.sizeX, hitBox.sizeY, hitBox.sizeZ);
 
             //DEBUG world editing
             if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
@@ -69,7 +73,7 @@ public class WorldCursorOverlay implements RenderableProvider {
             r.meshPart.primitiveType = GL20.GL_LINES;
             r.meshPart.offset = 0;
             r.meshPart.size = cursorMesh.getNumIndices();
-            r.worldTransform.setToTranslation(position);
+            r.worldTransform.setToTranslation(position).scl(scale);
             r.material = cursorMaterial;
             r.userData = CURSOR_RENDERABLE_BIAS;
             renderables.add(r);

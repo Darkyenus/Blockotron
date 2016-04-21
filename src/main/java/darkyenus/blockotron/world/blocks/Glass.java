@@ -16,7 +16,7 @@ public class Glass extends Block {
     private static final BlockFaceTexture TEXTURE = BlockFaces.getBlockFace("glass");
 
     private Glass() {
-        super("glass", true, false);
+        super("glass", true, true, false);
     }
 
     @Override
