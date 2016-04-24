@@ -4,7 +4,7 @@ package darkyenus.blockotron.world.blocks;
 import darkyenus.blockotron.render.BlockFaceTexture;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.RectangleMeshBatch;
-import darkyenus.blockotron.utils.BlockBoundingBox;
+import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.world.Block;
 import darkyenus.blockotron.world.Side;
 import darkyenus.blockotron.world.World;
@@ -17,7 +17,7 @@ public class Flowerpot extends Block {
 	public static final Flowerpot FLOWERPOT = new Flowerpot();
 
 	private Flowerpot () {
-		super("flowerpot", false, false, false, new BlockBoundingBox(0.25f, 0.25f, 0f, 0.5f, 0.5f, 0.5f));
+		super("flowerpot", false, false, false, new BoundingBox(0.25f, 0.25f, 0f, 0.5f, 0.5f, 0.5f));
 	}
 
 	private static final BlockFaceTexture TOP = BlockFaces.getBlockFace("flowerpot_top");

@@ -12,7 +12,7 @@ import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
-import darkyenus.blockotron.utils.BlockBoundingBox;
+import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.world.BlockFilter;
 import darkyenus.blockotron.world.World;
 import darkyenus.blockotron.world.blocks.Air;
@@ -50,7 +50,7 @@ public class WorldCursorOverlay implements RenderableProvider {
             visible = false;
         }else{
             visible = true;
-            BlockBoundingBox hitBox = target.getBlock().hitBox;
+            BoundingBox hitBox = target.getBlock().hitBox;
             position.set(target.getX(), target.getY(), target.getZ()).add(hitBox.offsetX, hitBox.offsetY, hitBox.offsetZ);
             scale.set(hitBox.sizeX, hitBox.sizeY, hitBox.sizeZ);
 

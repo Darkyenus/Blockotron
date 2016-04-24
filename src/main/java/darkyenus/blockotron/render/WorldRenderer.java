@@ -20,10 +20,8 @@ import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import darkyenus.blockotron.world.Block;
-import darkyenus.blockotron.world.Chunk;
-import darkyenus.blockotron.world.World;
-import darkyenus.blockotron.world.WorldObserver;
+import com.github.antag99.retinazer.EntitySystem;
+import darkyenus.blockotron.world.*;
 
 /**
  * WorldObserver which takes care of rendering the {@link World} and in-game HUD.
@@ -35,8 +33,6 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         camera.up.set(0,0,1);
         camera.near = 0.1f;
         camera.far = 128f;//View distance
-        camera.position.set(0, 0, 30);
-        camera.direction.set(1, 0, 0);
     }
     private final Viewport viewport = new ExtendViewport(100f, 100f, camera);
 
@@ -68,7 +64,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         camera.direction.set(newDirection);
     }
 
-    public void render(){
+    public void render() {
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         cursorOverlay.update(world, camera, 20f);
 

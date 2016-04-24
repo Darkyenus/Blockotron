@@ -1,7 +1,7 @@
 package darkyenus.blockotron.world;
 
 import darkyenus.blockotron.render.RectangleMeshBatch;
-import darkyenus.blockotron.utils.BlockBoundingBox;
+import darkyenus.blockotron.utils.BoundingBox;
 
 /**
  *
@@ -16,17 +16,17 @@ public abstract class Block {
     /** Render: Does need to be rendered each frame? (Is it animated?) (static blocks are buffered) */
     public final boolean dynamic;
     /** Non-null collision bounding block of this block. */
-    public final BlockBoundingBox hitBox;
+    public final BoundingBox hitBox;
 
     protected Block(String id, boolean transparent, boolean occluding, boolean dynamic) {
         this.id = id;
         this.transparent = transparent;
         this.occluding = occluding;
         this.dynamic = dynamic;
-        this.hitBox = BlockBoundingBox.UNIT_BOUNDING_BOX;
+        this.hitBox = BoundingBox.UNIT_BOUNDING_BOX;
     }
 
-    protected Block(String id, boolean transparent, boolean occluding, boolean dynamic, BlockBoundingBox hitBox) {
+    protected Block(String id, boolean transparent, boolean occluding, boolean dynamic, BoundingBox hitBox) {
         this.id = id;
         this.transparent = transparent;
         this.occluding = occluding;

@@ -1,11 +1,13 @@
 package darkyenus.blockotron.world;
 
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
-import darkyenus.blockotron.utils.BlockBoundingBox;
+import com.github.antag99.retinazer.Engine;
+import com.github.antag99.retinazer.EngineConfig;
+import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.utils.RayCast;
+import darkyenus.blockotron.utils.SelectionWireResolver;
 
 /**
  * Holds all data of single world, either directly or through {@link Chunk}s.
@@ -17,9 +19,13 @@ public final class World {
     private final ChunkProvider chunkProvider;
     private final Array<WorldObserver> observers = new Array<>(false, 8, WorldObserver.class);
 
-    public World(ChunkProvider chunkProvider) {
+    private final Engine entityEngine;
+
+    public World(ChunkProvider chunkProvider, EngineConfig engineConfig) {
         this.chunkProvider = chunkProvider;
         chunkProvider.initialize(this);
+        engineConfig.addWireResolver(new SelectionWireResolver(this));// Auto wire World instances
+        entityEngine = new Engine(engineConfig);
     }
 
     /** Get unique long-key under which the chunk at given chunk coordinates is saved at {@link #chunks}. */
@@ -51,9 +57,9 @@ public final class World {
 
     /** Translate a world x or y coordinate into a chunk-coordinate.
      * @see Chunk#x */
-    public static int chunkCoord(float xy){
-        float c = xy / Chunk.CHUNK_SIZE;
-        return MathUtils.floor(c);
+    public static int chunkCoord(double xy){
+        double c = xy / Chunk.CHUNK_SIZE;
+        return (int)Math.floor(c);
     }
 
     /** Translate a world x or y coordinate into a chunk-coordinate.
@@ -64,29 +70,29 @@ public final class World {
 
     /** Translate a world x or y coordinate into an in-chunk coordinate of its respective chunk.
      * Returned coordinate is always valid.
-     * @see #inChunkCoordZ(float) */
-    public static int inChunkCoordXY(float xy){
-        float c = xy % Chunk.CHUNK_SIZE;
-        if(c < 0)c += Chunk.CHUNK_SIZE;
+     * @see #inChunkCoordZ(double) */
+    public static int inChunkCoordXY(double xy){
+        double c = xy % Chunk.CHUNK_SIZE;
+        if(c < 0) c += Chunk.CHUNK_SIZE;
         return (int)c;
     }
 
     /** Translate a world x or y coordinate into an in-chunk coordinate of its respective chunk.
      * Returned coordinate is always valid.
-     * @see #inChunkCoordZ(float) */
+     * @see #inChunkCoordZ(double) */
     public static int inChunkCoordXY(int xy){
         return Math.floorMod(xy, Chunk.CHUNK_SIZE);
     }
 
     /** Translate a world z coordinate into an in-chunk coordinate of its respective chunk.
      * Returned coordinate may not be valid if z is < 0 or >= {@link Chunk#CHUNK_HEIGHT}.
-     * @see #inChunkCoordXY(float) */
-    public static int inChunkCoordZ(float z){
+     * @see #inChunkCoordXY(double) */
+    public static int inChunkCoordZ(double z){
         return (int)z;
     }
 
     /** @return block on given world coordinates, retrieves the chunk if not loaded */
-    public Block getBlock(float x, float y, float z) {
+    public Block getBlock(double x, double y, double z) {
         final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
         final int cx = inChunkCoordXY(x);
         final int cy = inChunkCoordXY(y);
@@ -105,7 +111,7 @@ public final class World {
     }
 
     /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
-    public Block getLoadedBlock(float x, float y, float z){
+    public Block getLoadedBlock(double x, double y, double z){
         final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
         if(loadedChunk == null)return null;
         final int cx = inChunkCoordXY(x);
@@ -154,6 +160,14 @@ public final class World {
         }
 	}
 
+    public void update(){
+        entityEngine.update();
+    }
+
+    public Engine entityEngine(){
+        return entityEngine;
+    }
+
     /** Can't be removed.
      * @see WorldObserver */
     public void addObserver(WorldObserver observer){
@@ -180,6 +194,7 @@ public final class World {
         private Block block;
         private Side side;
         private int x,y,z;
+        private float t;
 
         private RayCastResult() {
         }
@@ -209,6 +224,11 @@ public final class World {
             return z;
         }
 
+        /** Distance travelled by the ray. */
+        public float getT() {
+            return t;
+        }
+
         protected void reset(BlockFilter filter, Vector3 origin, Vector3 direction){
             this.block = null;
             this.filter = filter;
@@ -222,8 +242,8 @@ public final class World {
             if (block == null) return true;//Were done
             if (filter.accepts(block)) {
                 //Check hit box (unit hit box is always right)
-                BlockBoundingBox hitBox = block.hitBox;
-                if(hitBox != BlockBoundingBox.UNIT_BOUNDING_BOX){
+                BoundingBox hitBox = block.hitBox;
+                if(hitBox != BoundingBox.UNIT_BOUNDING_BOX){
                     final Vector3 origin = this.origin;
                     final Vector3 direction = this.direction;
 
@@ -237,6 +257,7 @@ public final class World {
                 this.x = x;
                 this.y = y;
                 this.z = z;
+                this.t = t;
                 this.side = side;
                 return true;//Done
             }

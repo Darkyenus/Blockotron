@@ -7,12 +7,16 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g3d.utils.FirstPersonCameraController;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.github.antag99.retinazer.EngineConfig;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.WorldRenderer;
+import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.*;
+import darkyenus.blockotron.world.components.*;
 import darkyenus.blockotron.world.debug.DebugWorldGenerator;
+import darkyenus.blockotron.world.systems.KinematicSystem;
+import darkyenus.blockotron.world.systems.PlayerInputSystem;
 
 /**
  *
@@ -22,20 +26,31 @@ public class GameScreen extends Screen {
     private WorldRenderer renderer;
     private World world;
 
-    private FirstPersonCameraController controller;
     private ShapeRenderer shapeRenderer;
     private boolean debugOverlay = false;
+
+    private int playerEntity;
 
     @Override
     public void show() {
         if(renderer == null){
-            world = new World(new GeneratorChunkProvider(new DebugWorldGenerator()));
             renderer = new WorldRenderer();
+            world = new World(
+                    new GeneratorChunkProvider(new DebugWorldGenerator()),
+                    new EngineConfig()
+                            .addSystem(new PlayerInputSystem())
+                            .addSystem(new KinematicSystem())
+                            .addWireResolver(new SelectionWireResolver(renderer)));
             world.addObserver(renderer);
 
-            controller = new FirstPersonCameraController(renderer.camera);
-            Gdx.input.setInputProcessor(controller);
             shapeRenderer = new ShapeRenderer();
+
+            playerEntity = world.entityEngine().createEntity();
+            world.entityEngine().getMapper(Played.class).create(playerEntity);
+            world.entityEngine().getMapper(Position.class).create(playerEntity).set(0, 0, 30);
+            world.entityEngine().getMapper(Kinematic.class).create(playerEntity).setup(10f, true).setupHitbox(0.4f, 1.8f);
+            world.entityEngine().getMapper(Orientation.class).create(playerEntity);
+            world.entityEngine().getMapper(SelfMotionCapable.class).create(playerEntity).setup(45f, 5f);
         }
     }
 
@@ -46,7 +61,7 @@ public class GameScreen extends Screen {
     }
 
     private void update(float delta){
-        controller.update(delta);
+        world.update();
         if(Gdx.input.isKeyJustPressed(Input.Keys.F3)){
             debugOverlay = !debugOverlay;
         }
@@ -69,6 +84,12 @@ public class GameScreen extends Screen {
             sb.append("X: ").append(renderer.camera.position.x).append('\n');
             sb.append("Y: ").append(renderer.camera.position.y).append('\n');
             sb.append("Z: ").append(renderer.camera.position.z).append('\n');
+
+            final Kinematic playerKinematic = world.entityEngine().getMapper(Kinematic.class).get(playerEntity);
+            sb.append("VX: ").append(playerKinematic.velX).append('\n');
+            sb.append("VY: ").append(playerKinematic.velY).append('\n');
+            sb.append("VZ: ").append(playerKinematic.velZ).append('\n');
+
             sb.append("Chunk X: ").append(World.chunkCoord(renderer.camera.position.x)).append(" ").append(World.inChunkCoordXY(renderer.camera.position.x)).append('\n');
             sb.append("Chunk Y: ").append(World.chunkCoord(renderer.camera.position.y)).append(" ").append(World.inChunkCoordXY(renderer.camera.position.y)).append('\n');
             sb.append("Dir X: ").append(renderer.camera.direction.x).append('\n');

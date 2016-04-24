@@ -18,12 +18,15 @@ public enum Side {
     public final byte flag;
     /** -1, 0 or 1 of this direction in given dimension. */
     public final int offX, offY, offZ;
+    /** Direction represented by a vector. Do not modify. */
+    public final Vector3 vector;
 
     Side(int offX, int offY, int offZ) {
         this.flag = (byte) (1 << ordinal());
         this.offX = offX;
         this.offY = offY;
         this.offZ = offZ;
+        vector = new Vector3(offX, offY, offZ);
     }
 
     /** Return direction of normalized vector or null if invalid. */

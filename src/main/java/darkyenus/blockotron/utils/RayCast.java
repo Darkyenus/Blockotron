@@ -2,7 +2,6 @@ package darkyenus.blockotron.utils;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.math.collision.BoundingBox;
 import darkyenus.blockotron.world.Side;
 
 /**
@@ -10,25 +9,31 @@ import darkyenus.blockotron.world.Side;
  */
 public final class RayCast {
 
-    public static float gridRayCast(Vector3 origin, Vector3 direction, BoundingBox boundingBox, float maxDistance, RayCastListener listener){
+    private static final BoundingBoxRayCastListener gridBoundingBoxRayCast_TMP = new BoundingBoxRayCastListener();
+
+    public static float gridBoundingBoxRayCast(Vector3 origin, Vector3 direction, BoundingBox boundingBox, float maxDistance, RayCastListener listener){
         final float originOffX, originOffY, originOffZ;
         if(direction.x < 0){
-            originOffX = -boundingBox.min.x;
+            originOffX = -boundingBox.offsetX;
         } else {
-            originOffX = boundingBox.max.x;
+            originOffX = boundingBox.offsetX + boundingBox.sizeX;
         }
         if(direction.y < 0){
-            originOffY = -boundingBox.min.y;
+            originOffY = -boundingBox.offsetY;
         } else {
-            originOffY = boundingBox.max.y;
+            originOffY = boundingBox.offsetY + boundingBox.sizeY;
         }
         if(direction.z < 0){
-            originOffZ = -boundingBox.min.z;
+            originOffZ = -boundingBox.offsetZ;
         } else {
-            originOffZ = boundingBox.max.z;
+            originOffZ = boundingBox.offsetZ + boundingBox.sizeZ;
         }
+        //Origin + originOff(set) = position of the corner that will cross boundaries first
 
-        throw new UnsupportedOperationException("unimplemented yet");
+        final BoundingBoxRayCastListener boundingBoxListener = gridBoundingBoxRayCast_TMP;
+        boundingBoxListener.reset(boundingBox, listener, originOffX, originOffY, originOffZ, origin, direction);
+
+        return gridRayCast(origin.x + originOffX, origin.y + originOffY, origin.z + originOffZ, direction.x, direction.y, direction.z, maxDistance, listener);
     }
 
     /** 
@@ -86,28 +91,28 @@ public final class RayCast {
                 if (tMaxX < tMaxZ) {
                     if(tMaxX > maxDistance) return maxDistance;
                     x += stepX;
+                    t = tMaxX;
                     tMaxX += tDeltaX;
-                    t += tDeltaX;
                     side = stepX < 0 ? Side.EAST : Side.WEST;
                 } else {
                     if(tMaxZ > maxDistance) return maxDistance;
                     z += stepZ;
+                    t = tMaxZ;
                     tMaxZ += tDeltaZ;
-                    t += tDeltaZ;
                     side = stepZ < 0 ? Side.TOP : Side.BOTTOM;
                 }
             } else {
                 if (tMaxY < tMaxZ) {
                     if(tMaxY > maxDistance) return maxDistance;
                     y += stepY;
+                    t = tMaxY;
                     tMaxY += tDeltaY;
-                    t += tDeltaY;
                     side = stepY < 0 ? Side.NORTH : Side.SOUTH;
                 } else {
                     if(tMaxZ > maxDistance) return maxDistance;
                     z += stepZ;
+                    t = tMaxZ;
                     tMaxZ += tDeltaZ;
-                    t += tDeltaZ;
                     side = stepZ < 0 ? Side.TOP : Side.BOTTOM;
                 }
             }
@@ -136,6 +141,29 @@ public final class RayCast {
         boolean found(int x, int y, int z, float t, Side side);
     }
 
+    private static class BoundingBoxRayCastListener implements RayCastListener {
+
+        private BoundingBox boundingBox;
+        private RayCastListener baseListener;
+        private float originOffX, originOffY, originOffZ;
+        private final Vector3 origin = new Vector3(), direction = new Vector3(), tmp = new Vector3();
+
+        public void reset(BoundingBox boundingBox, RayCastListener baseListener,float originOffX, float originOffY, float originOffZ, Vector3 origin, Vector3 direction) {
+            this.boundingBox = boundingBox;
+            this.baseListener = baseListener;
+            this.originOffX = originOffX;
+            this.originOffY = originOffY;
+            this.originOffZ = originOffZ;
+            this.origin.set(origin);
+            this.direction.set(direction);
+        }
+
+        @Override
+        public boolean found(int x, int y, int z, float t, Side side) {
+            final Vector3 bBoxPosition = tmp.set(origin).mulAdd(direction, t);
+            return false;
+        }
+    }
 
 
 }
