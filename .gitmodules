@@ -1,0 +1,3 @@
+[submodule "retinazer"]
+	path = retinazer
+	url = https://github.com/Darkyenus/retinazer.git
