@@ -1,6 +1,7 @@
 package darkyenus.blockotron.world.components;
 
 import com.github.antag99.retinazer.Component;
+import darkyenus.blockotron.utils.BoundingBox;
 
 /**
  * Encodes velocity of the entity.
@@ -22,10 +23,9 @@ public final class Kinematic implements Component {
 
     public boolean onGround = false;
 
-    public boolean noClip = true;
-
-    public float hitboxHalfExtentXY = 0.4f;
-    public float hitboxHeight = 1.8f;
+    /** Hitbox of the entity, positioned at entity's position.
+     * Entities without any hitbox do not collide with anything. */
+    public BoundingBox hitBox = null;
 
     public Kinematic setup(float xyFriction, boolean affectedByGravity){
         this.xyFriction = xyFriction;
@@ -34,9 +34,7 @@ public final class Kinematic implements Component {
     }
 
     public Kinematic setupHitbox(float hitboxHalfExtentXY, float hitboxHeight){
-        this.noClip = false;
-        this.hitboxHalfExtentXY = hitboxHalfExtentXY;
-        this.hitboxHeight = hitboxHeight;
+        this.hitBox = new BoundingBox(-hitboxHalfExtentXY, -hitboxHalfExtentXY, 0f, hitboxHalfExtentXY * 2f, hitboxHalfExtentXY*2f, hitboxHeight);
         return this;
     }
 }

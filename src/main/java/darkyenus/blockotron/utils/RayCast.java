@@ -9,32 +9,64 @@ import darkyenus.blockotron.world.Side;
  */
 public final class RayCast {
 
-    private static final BoundingBoxRayCastListener gridBoundingBoxRayCast_TMP = new BoundingBoxRayCastListener();
+	private static final com.badlogic.gdx.math.collision.BoundingBox gridBoundingBoxRayCast_BB_TMP = new com.badlogic.gdx.math.collision.BoundingBox();
+	private static final com.badlogic.gdx.math.collision.BoundingBox gridBoundingBoxRayCast_BB2_TMP = new com.badlogic.gdx.math.collision.BoundingBox();
+	private static final BoundingBox.BoundingBoxIntersectResult gridBoundingBoxRayCast_BBIR_TMP = new BoundingBox.BoundingBoxIntersectResult();
 
-    public static float gridBoundingBoxRayCast(Vector3 origin, Vector3 direction, BoundingBox boundingBox, float maxDistance, RayCastListener listener){
-        final float originOffX, originOffY, originOffZ;
-        if(direction.x < 0){
-            originOffX = -boundingBox.offsetX;
-        } else {
-            originOffX = boundingBox.offsetX + boundingBox.sizeX;
-        }
-        if(direction.y < 0){
-            originOffY = -boundingBox.offsetY;
-        } else {
-            originOffY = boundingBox.offsetY + boundingBox.sizeY;
-        }
-        if(direction.z < 0){
-            originOffZ = -boundingBox.offsetZ;
-        } else {
-            originOffZ = boundingBox.offsetZ + boundingBox.sizeZ;
-        }
-        //Origin + originOff(set) = position of the corner that will cross boundaries first
+	/** Do a generic ray cast from origin in given direction using a bounding box. Direction MUST be normalized for meaningful T.
+	 * Listener may be invoked with isValid for all grid broad-phase voxels and then once again for found result if any, with
+	 * found().
+	 * @see RayCastListener for listener parameters
+	 * @return total units travelled (maxDistance if not found) */
+	public static float gridBoundingBoxRayCast (Vector3 origin, Vector3 direction, BoundingBox sweepBox, float maxDistance,
+		BoundingBoxRayCastListener listener) {
+		final com.badlogic.gdx.math.collision.BoundingBox broadPhaseBox = gridBoundingBoxRayCast_BB_TMP;
+		broadPhaseBox.min.set(sweepBox.offsetX, sweepBox.offsetY, sweepBox.offsetZ).add(origin);
+		broadPhaseBox.max.set(broadPhaseBox.min).add(sweepBox.sizeX, sweepBox.sizeY, sweepBox.sizeZ);
 
-        final BoundingBoxRayCastListener boundingBoxListener = gridBoundingBoxRayCast_TMP;
-        boundingBoxListener.reset(boundingBox, listener, originOffX, originOffY, originOffZ, origin, direction);
+		final com.badlogic.gdx.math.collision.BoundingBox finalBox = gridBoundingBoxRayCast_BB2_TMP;
+		finalBox.min.set(broadPhaseBox.min).mulAdd(direction, maxDistance);
+		finalBox.max.set(broadPhaseBox.max).mulAdd(direction, maxDistance);
 
-        return gridRayCast(origin.x + originOffX, origin.y + originOffY, origin.z + originOffZ, direction.x, direction.y, direction.z, maxDistance, listener);
-    }
+		broadPhaseBox.ext(finalBox);
+		final float EPSILON = 0.01f;
+		final int fromX = MathUtils.floor(broadPhaseBox.min.x - EPSILON);
+		final int fromY = MathUtils.floor(broadPhaseBox.min.y - EPSILON);
+		final int fromZ = MathUtils.floor(broadPhaseBox.min.z - EPSILON);
+		final int toX = MathUtils.floor(broadPhaseBox.max.x + EPSILON);
+		final int toY = MathUtils.floor(broadPhaseBox.max.y + EPSILON);
+		final int toZ = MathUtils.floor(broadPhaseBox.max.z + EPSILON);
+
+		final BoundingBox.BoundingBoxIntersectResult internalResult = gridBoundingBoxRayCast_BBIR_TMP;
+		float bestT = Float.POSITIVE_INFINITY;
+		int bestX = 0, bestY = 0, bestZ = 0;
+		Side bestSide = null;
+
+		for (int x = fromX; x <= toX; x++) {
+			for (int y = fromY; y <= toY; y++) {
+				for (int z = fromZ; z <= toZ; z++) {
+					if (listener.intersects(x, y, z, sweepBox, origin.x - x, origin.y - y, origin.z - z, direction.x, direction.y,
+						direction.z, internalResult)) {
+						final float t = internalResult.getT();
+						if (t < bestT && t < maxDistance) {
+							bestT = t;
+							bestX = x;
+							bestY = y;
+							bestZ = z;
+							bestSide = internalResult.getSide();
+						}
+					}
+				}
+			}
+		}
+
+		if (bestT != Float.POSITIVE_INFINITY) {
+			listener.foundIntersected(bestX, bestY, bestZ, bestT, bestSide);
+			return bestT;
+		} else {
+			return maxDistance;
+		}
+	}
 
     /** 
      * @see #gridRayCast(float, float, float, float, float, float, float, RayCastListener) */
@@ -141,29 +173,12 @@ public final class RayCast {
         boolean found(int x, int y, int z, float t, Side side);
     }
 
-    private static class BoundingBoxRayCastListener implements RayCastListener {
+    public interface BoundingBoxRayCastListener {
 
-        private BoundingBox boundingBox;
-        private RayCastListener baseListener;
-        private float originOffX, originOffY, originOffZ;
-        private final Vector3 origin = new Vector3(), direction = new Vector3(), tmp = new Vector3();
-
-        public void reset(BoundingBox boundingBox, RayCastListener baseListener,float originOffX, float originOffY, float originOffZ, Vector3 origin, Vector3 direction) {
-            this.boundingBox = boundingBox;
-            this.baseListener = baseListener;
-            this.originOffX = originOffX;
-            this.originOffY = originOffY;
-            this.originOffZ = originOffZ;
-            this.origin.set(origin);
-            this.direction.set(direction);
+        default boolean intersects(int x, int y, int z, BoundingBox sweepBox, float testOriginX, float testOriginY, float testOriginZ, float dirX, float dirY, float dirZ, BoundingBox.BoundingBoxIntersectResult intersectResult){
+            return BoundingBox.UNIT_BOUNDING_BOX.intersectsBox(sweepBox, testOriginX, testOriginY, testOriginZ, dirX, dirY, dirZ, intersectResult);
         }
 
-        @Override
-        public boolean found(int x, int y, int z, float t, Side side) {
-            final Vector3 bBoxPosition = tmp.set(origin).mulAdd(direction, t);
-            return false;
-        }
+        void foundIntersected(int x, int y, int z, float t, Side side);
     }
-
-
 }

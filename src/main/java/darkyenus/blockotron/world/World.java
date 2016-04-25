@@ -112,22 +112,22 @@ public final class World {
 
     /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
     public Block getLoadedBlock(double x, double y, double z){
-        final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
-        if(loadedChunk == null)return null;
-        final int cx = inChunkCoordXY(x);
-        final int cy = inChunkCoordXY(y);
         final int cz = inChunkCoordZ(z);
         if(cz < 0 || cz >= Chunk.CHUNK_HEIGHT) return null;
+        final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
+        if(loadedChunk == null) return null;
+        final int cx = inChunkCoordXY(x);
+        final int cy = inChunkCoordXY(y);
         return loadedChunk.getBlock(cx, cy, cz);
     }
 
     /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
     public Block getLoadedBlock(int x, int y, int z){
+        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return null;
         final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
-        if(loadedChunk == null)return null;
+        if(loadedChunk == null) return null;
         final int cx = inChunkCoordXY(x);
         final int cy = inChunkCoordXY(y);
-        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return null;
         return loadedChunk.getBlock(cx, cy, z);
     }
 
@@ -159,6 +159,25 @@ public final class World {
             return result;
         }
 	}
+
+    /** Instance of return value of getBlockOnSweepRay, for GC reasons. */
+    private final SweepRayCastResult getBlockOnSweepRay_TMP = new SweepRayCastResult();
+    /** Cast a sweep ray (ray with bounding box) from given origin (world coordinated) in given direction (must be normalized)
+     * and return the first block hit which satisfies given filter. When search is not successful in maxDistance units,
+     * returns null.
+     *
+     * When successful returns instance of SweepRayCastResult. Null when for any reason unsuccessful.
+     * NOTE: Returned instance is the same for each invocation (for GC reasons), so do not keep it around! */
+    public SweepRayCastResult getBlockOnSweepRay (BoundingBox sweepBox, Vector3 origin, Vector3 direction, float maxDistance, BlockFilter filter) {
+        final SweepRayCastResult result = getBlockOnSweepRay_TMP;
+        result.reset(filter);
+        RayCast.gridBoundingBoxRayCast(origin, direction, sweepBox, maxDistance, result);
+        if(result.block == null){
+            return null;
+        } else {
+            return result;
+        }
+    }
 
     public void update(){
         entityEngine.update();
@@ -266,6 +285,74 @@ public final class World {
                 return true;//Done
             }
             return false;//Keep searching
+        }
+    }
+
+    public final class SweepRayCastResult implements RayCast.BoundingBoxRayCastListener {
+
+        private BlockFilter filter;
+
+        private Block block;
+        private Side side;
+        private int x,y,z;
+        private float t;
+
+        private SweepRayCastResult() {
+        }
+
+        /** Found block. Never null. */
+        public Block getBlock() {
+            return block;
+        }
+
+        /** Side through which the ray hit the block. MAY BE NULL if the ray started in this block. */
+        public Side getSide() {
+            return side;
+        }
+
+        /** World coordinate of found block. */
+        public int getX() {
+            return x;
+        }
+
+        /** World coordinate of found block. */
+        public int getY() {
+            return y;
+        }
+
+        /** World coordinate of found block. */
+        public int getZ() {
+            return z;
+        }
+
+        /** Distance travelled by the ray. */
+        public float getT() {
+            return t;
+        }
+
+        @Override
+        public boolean intersects(int x, int y, int z, BoundingBox sweepBox, float testOriginX, float testOriginY, float testOriginZ, float dirX, float dirY, float dirZ, BoundingBox.BoundingBoxIntersectResult intersectResult) {
+            final Block block = getLoadedBlock(x, y, z);
+            //noinspection SimplifiableIfStatement
+            if (block == null || !filter.accepts(block)) {
+                return false;
+            }
+            return block.hitBox.intersectsBox(sweepBox, testOriginX, testOriginY, testOriginZ, dirX, dirY, dirZ, intersectResult);
+        }
+
+        @Override
+        public void foundIntersected(int x, int y, int z, float t, Side side) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.t = t;
+            this.side = side;
+            this.block = getLoadedBlock(x, y, z);
+        }
+
+        public void reset(BlockFilter filter) {
+            this.block = null;
+            this.filter = filter;
         }
     }
 }
