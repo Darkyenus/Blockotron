@@ -21,7 +21,7 @@ public final class World {
 
     private final Engine entityEngine;
 
-    public World(ChunkProvider chunkProvider, EngineConfig engineConfig) {
+    public World (ChunkProvider chunkProvider, EngineConfig engineConfig) {
         this.chunkProvider = chunkProvider;
         chunkProvider.initialize(this);
         engineConfig.addWireResolver(new SelectionWireResolver(this));// Auto wire World instances

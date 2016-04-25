@@ -1,5 +1,7 @@
 package darkyenus.blockotron.world;
 
+import com.badlogic.gdx.utils.IntArray;
+import com.badlogic.gdx.utils.IntSet;
 import darkyenus.blockotron.world.blocks.Air;
 
 import java.util.Arrays;
@@ -31,6 +33,9 @@ public final class Chunk {
      * For each block, contains which Sides are visible.
      * Byte holds flags from {@link Side} */
     private final byte[] occlusion = new byte[blocks.length];
+
+    /** IDs of entities on this chunk */
+    private final IntArray entities = new IntArray(false, 64);
 
     //Iteration hints
     private int dynamicMin = 0, dynamicMax = -1, staticMin = 0, staticMax = -1;
@@ -270,6 +275,22 @@ public final class Chunk {
             }
         }
         dynamicMax = currentMax;
+    }
+
+    /** Register entity with this chunk */
+    public void addEntity(int entity){
+        entities.add(entity);
+    }
+
+    /** Un-register entity from this chunk
+     * @return true if removed, false if not found */
+    public boolean removeEntity(int entity){
+        return entities.removeValue(entity);
+    }
+
+    /** Get the list of all entities on this chunk. Do not modify, use for iteration only. */
+    public IntArray entities(){
+        return entities;
     }
 
     public interface BlockIterator {

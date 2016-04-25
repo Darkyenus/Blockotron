@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector3;
 import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.world.BlockFilter;
+import darkyenus.blockotron.world.Chunk;
 import darkyenus.blockotron.world.Side;
 import darkyenus.blockotron.world.World;
 import darkyenus.blockotron.world.components.Kinematic;
@@ -80,17 +81,17 @@ public class KinematicSystem extends EntityProcessorSystem {
 		final int newChunkX = World.chunkCoord(position.x);
 		final int newChunkY = World.chunkCoord(position.y);
 		if(oldChunkX != newChunkX || oldChunkY != newChunkY){
-			// Register to different chunk TODO Implement
-			/*final Chunk oldChunk = world.getLoadedChunk(oldChunkX, oldChunkY);
+			// Register to different chunk
+			final Chunk oldChunk = world.getLoadedChunk(oldChunkX, oldChunkY);
 			final Chunk newChunk = world.getLoadedChunk(newChunkX, newChunkY);
 			if(oldChunk != null && newChunk != null){
 				//If removed, add to new
-				if (oldChunk.removeEntity(this)) {
-					newChunk.addEntity(this);
+				if (oldChunk.removeEntity(entity)) {
+					newChunk.addEntity(entity);
 				} else {
 					assert false : "Entity "+this+" was not present in chunk "+oldChunkX+" "+oldChunkY;
 				}
-			}*/
+			}
 		}
 	}
 
