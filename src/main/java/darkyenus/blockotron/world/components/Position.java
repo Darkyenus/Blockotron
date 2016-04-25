@@ -4,7 +4,11 @@ import com.badlogic.gdx.math.Vector3;
 import com.github.antag99.retinazer.Component;
 
 /**
- * World entity position
+ * World entity position.
+ *
+ * Note: Chunks track entities based on their position. When changing the position,
+ * use {@link darkyenus.blockotron.world.Chunk#addEntity(int)} and {@link darkyenus.blockotron.world.Chunk#removeEntity(int)}
+ * to register the entity to the proper chunk.
  *
  * @see BlockPosition for block entities. Mutually exclusive.
  */

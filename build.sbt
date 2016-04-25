@@ -11,6 +11,7 @@ val gdxVersion = "1.9.2"
 lazy val blockotron = project in file(".") dependsOn retinazer
 
 lazy val retinazer = project in file("retinazer") / "retinazer" settings (
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-encoding", "UTF-8", "-g"),
   libraryDependencies += "com.badlogicgames.gdx" % "gdx" % gdxVersion
   )
 

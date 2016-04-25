@@ -5,9 +5,12 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.LongMap;
 import com.github.antag99.retinazer.Engine;
 import com.github.antag99.retinazer.EngineConfig;
+import com.github.antag99.retinazer.MapperListener;
 import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
+import darkyenus.blockotron.world.components.BlockPosition;
+import darkyenus.blockotron.world.components.Position;
 
 /**
  * Holds all data of single world, either directly or through {@link Chunk}s.
@@ -25,7 +28,44 @@ public final class World {
         this.chunkProvider = chunkProvider;
         chunkProvider.initialize(this);
         engineConfig.addWireResolver(new SelectionWireResolver(this));// Auto wire World instances
-        entityEngine = new Engine(engineConfig);
+        final Engine engine = new Engine(engineConfig);
+        entityEngine = engine;
+
+        engine.getMapper(Position.class).setListener(new MapperListener<Position>() {
+            @Override
+            public void componentAdded(int entity, Position position) {
+                final int chunkX = World.chunkCoord(position.x);
+                final int chunkY = World.chunkCoord(position.y);
+                final Chunk chunk = getChunk(chunkX, chunkY);
+                chunk.addEntity(entity);
+            }
+
+            @Override
+            public void componentRemoved(int entity, Position position) {
+                final int chunkX = World.chunkCoord(position.x);
+                final int chunkY = World.chunkCoord(position.y);
+                final Chunk chunk = getChunk(chunkX, chunkY);
+                chunk.removeEntity(entity);
+            }
+        });
+
+        engine.getMapper(BlockPosition.class).setListener(new MapperListener<BlockPosition>() {
+            @Override
+            public void componentAdded(int entity, BlockPosition position) {
+                final int chunkX = World.chunkCoord(position.x);
+                final int chunkY = World.chunkCoord(position.y);
+                final Chunk chunk = getChunk(chunkX, chunkY);
+                chunk.addEntity(entity);
+            }
+
+            @Override
+            public void componentRemoved(int entity, BlockPosition position) {
+                final int chunkX = World.chunkCoord(position.x);
+                final int chunkY = World.chunkCoord(position.y);
+                final Chunk chunk = getChunk(chunkX, chunkY);
+                chunk.removeEntity(entity);
+            }
+        });
     }
 
     /** Get unique long-key under which the chunk at given chunk coordinates is saved at {@link #chunks}. */
