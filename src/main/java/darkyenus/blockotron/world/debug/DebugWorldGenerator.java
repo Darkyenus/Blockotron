@@ -12,7 +12,7 @@ import darkyenus.blockotron.world.generator.WorldGenerator;
 public class DebugWorldGenerator implements WorldGenerator {
     @Override
     public void generateChunk(Chunk chunk) {
-        /*for (int x = 0; x < Chunk.CHUNK_SIZE; x++) {
+        for (int x = 0; x < Chunk.CHUNK_SIZE; x++) {
             for (int y = 0; y < Chunk.CHUNK_SIZE; y++) {
                 for (int z = 0; z < 3; z++) {
                     chunk.setBlock(x, y, z, Grass.GRASS);
@@ -35,8 +35,6 @@ public class DebugWorldGenerator implements WorldGenerator {
         chunk.setBlock(7, 5, 3, Glass.GLASS);
         chunk.setBlock(7, 5, 4, Glass.GLASS);
         chunk.setBlock(7, 5, 5, Glass.GLASS);
-        chunk.setBlock(7, 5, 6, Flowerpot.FLOWERPOT);*/
-
-        chunk.setBlock(2, 2, 0, Grass.GRASS);
+        chunk.setBlock(7, 5, 6, Flowerpot.FLOWERPOT);
     }
 }

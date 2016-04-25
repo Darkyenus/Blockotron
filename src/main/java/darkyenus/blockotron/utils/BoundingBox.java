@@ -61,18 +61,49 @@ public final class BoundingBox {
 			rayZLeaveDist = (offsetZ + sizeZ) - (oZ);
 		}
 
-		// This creates infinities when direction is 0, but the algo works fine with them
+		return resolveIntersect(rayXEnterDist, rayXLeaveDist, rayYEnterDist, rayYLeaveDist, rayZEnterDist, rayZLeaveDist, dX, dY, dZ, result);
+	}
+
+	private static boolean isOppositeInfinityOrZero(float f1, float f2){
+		return (f1 == Float.NEGATIVE_INFINITY && f2 == Float.POSITIVE_INFINITY) || (f1 == Float.POSITIVE_INFINITY && f2 == Float.NEGATIVE_INFINITY) || (f1 == 0 && f2 == 0);
+	}
+
+	private boolean resolveIntersect(float rayXEnterDist, float rayXLeaveDist, float rayYEnterDist, float rayYLeaveDist, float rayZEnterDist, float rayZLeaveDist, float dX, float dY, float dZ, BoundingBoxIntersectResult result){
+		// This creates infinities when direction is 0, this is handled later
 		final float idX = 1f / dX;
 		final float idY = 1f / dY;
 		final float idZ = 1f / dZ;
 
-		final float rayXEnterT = rayXEnterDist * idX, rayYEnterT = rayYEnterDist * idY, rayZEnterT = rayZEnterDist * idZ;
-		final float rayXLeaveT = rayXLeaveDist * idX, rayYLeaveT = rayYLeaveDist * idY, rayZLeaveT = rayZLeaveDist * idZ;
+		float rayXEnterT = rayXEnterDist * idX, rayYEnterT = rayYEnterDist * idY, rayZEnterT = rayZEnterDist * idZ;
+		float rayXLeaveT = rayXLeaveDist * idX, rayYLeaveT = rayYLeaveDist * idY, rayZLeaveT = rayZLeaveDist * idZ;
 
-		return resolveIntersect(rayXEnterT, rayXLeaveT, rayYEnterT, rayYLeaveT, rayZEnterT, rayZLeaveT, dX, dY, dZ, result);
-	}
+		if(Float.isInfinite(idX)){
+			if(isOppositeInfinityOrZero(rayXEnterT, rayXLeaveT)){
+				rayXEnterT = Float.NEGATIVE_INFINITY;
+				rayXLeaveT = Float.POSITIVE_INFINITY;
+			} else {
+				return false;
+			}
+		}
 
-	private boolean resolveIntersect(float rayXEnterT, float rayXLeaveT, float rayYEnterT, float rayYLeaveT, float rayZEnterT, float rayZLeaveT, float dX, float dY, float dZ, BoundingBoxIntersectResult result){
+		if(Float.isInfinite(idY)){
+			if(isOppositeInfinityOrZero(rayYEnterT, rayYLeaveT)){
+				rayYEnterT = Float.NEGATIVE_INFINITY;
+				rayYLeaveT = Float.POSITIVE_INFINITY;
+			} else {
+				return false;
+			}
+		}
+
+		if(Float.isInfinite(idZ)){
+			if(isOppositeInfinityOrZero(rayZEnterT, rayZLeaveT)){
+				rayZEnterT = Float.NEGATIVE_INFINITY;
+				rayZLeaveT = Float.POSITIVE_INFINITY;
+			} else {
+				return false;
+			}
+		}
+
 		final float allIn = max(rayXEnterT, rayYEnterT, rayZEnterT);
 		final float anyOut = min(rayXLeaveT, rayYLeaveT, rayZLeaveT);
 
@@ -128,15 +159,7 @@ public final class BoundingBox {
 			rayZLeaveDist = (offsetZ + sizeZ) - (oZ + box.offsetZ);
 		}
 
-		// This creates infinities when direction is 0, but the algo works fine with them
-		final float idX = 1f / dX;
-		final float idY = 1f / dY;
-		final float idZ = 1f / dZ;
-
-		final float rayXEnterT = rayXEnterDist * idX, rayYEnterT = rayYEnterDist * idY, rayZEnterT = rayZEnterDist * idZ;
-		final float rayXLeaveT = rayXLeaveDist * idX, rayYLeaveT = rayYLeaveDist * idY, rayZLeaveT = rayZLeaveDist * idZ;
-
-		return resolveIntersect(rayXEnterT, rayXLeaveT, rayYEnterT, rayYLeaveT, rayZEnterT, rayZLeaveT, dX, dY, dZ, result);
+		return resolveIntersect(rayXEnterDist, rayXLeaveDist, rayYEnterDist, rayYLeaveDist, rayZEnterDist, rayZLeaveDist, dX, dY, dZ, result);
 	}
 
 	private static float max (float f1, float f2, float f3) {

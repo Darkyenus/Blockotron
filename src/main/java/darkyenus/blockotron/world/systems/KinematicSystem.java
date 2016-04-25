@@ -104,7 +104,7 @@ public class KinematicSystem extends EntityProcessorSystem {
 
         if(castResult == null){
             position.add(x,y,z);
-        } else {
+		} else {
             final Side side = castResult.getSide();
 
 			final float dPosX = dir.x * castResult.getT();
