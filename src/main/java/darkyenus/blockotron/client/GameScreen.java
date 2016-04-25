@@ -8,9 +8,11 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.FloatCounter;
 import com.github.antag99.retinazer.EngineConfig;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.WorldRenderer;
+import darkyenus.blockotron.utils.Profiler;
 import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.*;
 import darkyenus.blockotron.world.components.*;
@@ -28,6 +30,9 @@ public class GameScreen extends Screen {
 
     private ShapeRenderer shapeRenderer;
     private boolean debugOverlay = false;
+
+    private final float[] fpsLog = new float[128];
+    private int lastAdded = -1;
 
     private int playerEntity;
 
@@ -56,8 +61,10 @@ public class GameScreen extends Screen {
 
     @Override
     public void render(float delta) {
+        Profiler.beginFrame();
         update(delta);
         draw();
+        Profiler.endFrame();
     }
 
     private void update(float delta){
@@ -123,6 +130,8 @@ public class GameScreen extends Screen {
             batch.begin();
             font.draw(batch, sb, 5, Gdx.graphics.getHeight() - 5);
             batch.end();
+
+            Profiler.renderGraph(shapeRenderer);
         }
 
         { //DEBUG: Draw crosshair

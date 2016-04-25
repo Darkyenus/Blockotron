@@ -55,9 +55,9 @@ public class WorldCursorOverlay implements RenderableProvider {
             scale.set(hitBox.sizeX, hitBox.sizeY, hitBox.sizeZ);
 
             //DEBUG world editing
-            if(Gdx.input.isKeyJustPressed(Input.Keys.C)){
+            if(Gdx.input.isKeyJustPressed(Input.Keys.C) && target.getSide() != null){
                 world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, Grass.GRASS);
-            } else if(Gdx.input.isKeyJustPressed(Input.Keys.R)){
+            } else if(Gdx.input.isKeyJustPressed(Input.Keys.R) && target.getSide() != null){
                 world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, Glass.GLASS);
             } else if(Gdx.input.isKeyJustPressed(Input.Keys.F)){
                 world.setBlock(target.getX(), target.getY(), target.getZ(), Air.AIR);

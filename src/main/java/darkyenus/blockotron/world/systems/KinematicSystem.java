@@ -65,6 +65,13 @@ public class KinematicSystem extends EntityProcessorSystem {
 			position.add(deltaX, deltaY, deltaZ);
 		} else {
 			moveBy(position, kinematic, (float)deltaX, (float)deltaY, deltaZ);
+			if(position.z < 0){
+				position.z = 0;
+				if(kinematic.velZ < 0){
+					kinematic.velZ = 0;
+				}
+				kinematic.onGround = true;
+			}
 		}
 	}
 
@@ -84,19 +91,20 @@ public class KinematicSystem extends EntityProcessorSystem {
             final Side side = castResult.getSide();
 
             dir.scl(castResult.getT());
+			final float remainingLen = len - castResult.getT();
 
             if(side != null){
                 final float onionSkin = 0.001f;
                 position.add(dir.x + side.offX * onionSkin, dir.y + side.offY * onionSkin, dir.z + side.offZ * onionSkin);
 
-                dir.scl(side.vector.dot(dir));
+                //dir.scl(side.vector.dot(dir));
 
                 if(side.offX != 0){
                     dir.x = 0;
-                    kinematic.velX = 0;
+                    //kinematic.velX = 0;
                 } else if(side.offY != 0){
                     dir.y = 0;
-                    kinematic.velY = 0;
+                    //kinematic.velY = 0;
                 } else if(side.offZ != 0) {
                     dir.z = 0;
                     kinematic.velZ = 0;
@@ -108,6 +116,7 @@ public class KinematicSystem extends EntityProcessorSystem {
 
                 if(dir.len2() > 0.000001f){
                     //Slide
+					dir.nor().scl(remainingLen);
                     moveBy(position, kinematic, dir.x, dir.y, dir.z);
                 }
             } else {

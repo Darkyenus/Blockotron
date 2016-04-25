@@ -1,5 +1,7 @@
 package darkyenus.blockotron.utils;
 
+import darkyenus.blockotron.world.Side;
+
 /** Immutable bounding box used for blocks and entities. */
 public final class BoundingBox {
 
@@ -22,58 +24,118 @@ public final class BoundingBox {
 
 	/** @param oX origin in bounding box coordinate space
 	 * @param dX direction (does not have to be normalized)
+	 * @param result optional object holding additional intersection info, but only if intersection did happen (returned true)
 	 * @return true if this bounding box intersects given ray */
-	public boolean intersectsRay (float oX, float oY, float oZ, float dX, float dY, float dZ) {
+	public boolean intersectsRay (float oX, float oY, float oZ, float dX, float dY, float dZ, BoundingBoxIntersectResult result) {
 		/*
 		 * Works by treating bounding box as three axis-aligned slices of space, perpendicular to each dimension. Then it calculates
 		 * when the ray enters and leaves each of the slices. If the ray enters all slices before leaving any of it, then it
 		 * intersects.
 		 */
+
+		final float rayXEnterDist, rayYEnterDist, rayZEnterDist;
+		final float rayXLeaveDist, rayYLeaveDist, rayZLeaveDist;
+
+		if(dX < 0){
+			rayXEnterDist = (offsetX + sizeX) - (oX);
+			rayXLeaveDist = (offsetX) - (oX);
+		} else {
+			rayXEnterDist = (offsetX) - (oX);
+			rayXLeaveDist = (offsetX + sizeX) - (oX);
+		}
+
+		if(dY < 0){
+			rayYEnterDist = (offsetY + sizeY) - (oY);
+			rayYLeaveDist = (offsetY) - (oY);
+		} else {
+			rayYEnterDist = (offsetY) - (oY);
+			rayYLeaveDist = (offsetY + sizeY) - (oY);
+		}
+
+		if(dZ < 0){
+			rayZEnterDist = (offsetZ + sizeZ) - (oZ);
+			rayZLeaveDist = (offsetZ) - (oZ);
+		} else {
+			rayZEnterDist = (offsetZ) - (oZ);
+			rayZLeaveDist = (offsetZ + sizeZ) - (oZ);
+		}
+
 		// This creates infinities when direction is 0, but the algo works fine with them
 		final float idX = 1f / dX;
 		final float idY = 1f / dY;
 		final float idZ = 1f / dZ;
 
-		final float x1 = (offsetX - oX) * idX;
-		final float x2 = (offsetX - oX + sizeX) * idX;
-		final float xIn;// = Math.min(x1, x2);
-		final float xOut;// = Math.max(x1, x2);
-		if (x1 < x2) {
-			xIn = x1;
-			xOut = x2;
+		final float rayXEnterT = rayXEnterDist * idX, rayYEnterT = rayYEnterDist * idY, rayZEnterT = rayZEnterDist * idZ;
+		final float rayXLeaveT = rayXLeaveDist * idX, rayYLeaveT = rayYLeaveDist * idY, rayZLeaveT = rayZLeaveDist * idZ;
+
+		return resolveIntersect(rayXEnterT, rayXLeaveT, rayYEnterT, rayYLeaveT, rayZEnterT, rayZLeaveT, dX, dY, dZ, result);
+	}
+
+	private boolean resolveIntersect(float rayXEnterT, float rayXLeaveT, float rayYEnterT, float rayYLeaveT, float rayZEnterT, float rayZLeaveT, float dX, float dY, float dZ, BoundingBoxIntersectResult result){
+		final float allIn = max(rayXEnterT, rayYEnterT, rayZEnterT);
+		final float anyOut = min(rayXLeaveT, rayYLeaveT, rayZLeaveT);
+
+		//Reject if allIn is negative, because it means that the ray points in the opposite direction
+		//Return true if all are in before any is out
+		if(allIn >= -0.001f && allIn < anyOut){
+			if(result != null){
+				result.t = allIn;
+
+				if(allIn == rayXEnterT){
+					result.side = dX < 0 ? Side.EAST : Side.WEST;//Or west!
+				} else if(allIn == rayYEnterT){
+					result.side = dY < 0 ? Side.NORTH : Side.SOUTH;//Or south
+				} else {
+					result.side = dZ < 0 ? Side.TOP : Side.BOTTOM;//Or bottom!
+				}
+			}
+			return true;
+		} else return false;
+	}
+
+	/** Similar to {@link #intersectsRay(float, float, float, float, float, float, BoundingBoxIntersectResult)}, but at the origin of ray is given bounding box.
+	 * @param oX origin in bounding box coordinate space
+	 * @param dX direction (does not have to be normalized)
+	 * @param result optional object holding additional intersection info, but only if intersection did happen (returned true)
+	 * @return true if this bounding box intersects given ray */
+	public boolean intersectsBox (BoundingBox box, float oX, float oY, float oZ, float dX, float dY, float dZ, BoundingBoxIntersectResult result) {
+		//See intersectRay for implementation comments
+		final float rayXEnterDist, rayYEnterDist, rayZEnterDist;
+		final float rayXLeaveDist, rayYLeaveDist, rayZLeaveDist;
+
+		if(dX < 0){
+			rayXEnterDist = (offsetX + sizeX) - (oX + box.offsetX);
+			rayXLeaveDist = (offsetX) - (oX + box.offsetX + box.sizeX);
 		} else {
-			xIn = x2;
-			xOut = x1;
+			rayXEnterDist = (offsetX) - (oX + box.offsetX + box.sizeX);
+			rayXLeaveDist = (offsetX + sizeX) - (oX + box.offsetX);
 		}
 
-		final float y1 = (offsetY - oY) * idY;
-		final float y2 = (offsetY - oY + sizeY) * idY;
-		final float yIn;// = Math.min(y1, y2);
-		final float yOut;// = Math.max(y1, y2);
-		if (y1 < y2) {
-			yIn = y1;
-			yOut = y2;
+		if(dY < 0){
+			rayYEnterDist = (offsetY + sizeY) - (oY + box.offsetY);
+			rayYLeaveDist = (offsetY) - (oY + box.offsetY + box.sizeY);
 		} else {
-			yIn = y2;
-			yOut = y1;
+			rayYEnterDist = (offsetY) - (oY + box.offsetY + box.sizeY);
+			rayYLeaveDist = (offsetY + sizeY) - (oY + box.offsetY);
 		}
 
-		final float z1 = (offsetZ - oZ) * idZ;
-		final float z2 = (offsetZ - oZ + sizeZ) * idZ;
-		final float zIn;// = Math.min(z1, z2);
-		final float zOut;// = Math.max(z1, z2);
-		if (z1 < z2) {
-			zIn = z1;
-			zOut = z2;
+		if(dZ < 0){
+			rayZEnterDist = (offsetZ + sizeZ) - (oZ + box.offsetZ);
+			rayZLeaveDist = (offsetZ) - (oZ + box.offsetZ + box.sizeZ);
 		} else {
-			zIn = z2;
-			zOut = z1;
+			rayZEnterDist = (offsetZ) - (oZ + box.offsetZ + box.sizeZ);
+			rayZLeaveDist = (offsetZ + sizeZ) - (oZ + box.offsetZ);
 		}
 
-		final float maxIn = max(xIn, yIn, zIn);
-		final float minOut = min(xOut, yOut, zOut);
-        //Reject if maxIn is negative, because it means that the ray points in the opposite direction
-		return maxIn >= -0.001f && maxIn < minOut;
+		// This creates infinities when direction is 0, but the algo works fine with them
+		final float idX = 1f / dX;
+		final float idY = 1f / dY;
+		final float idZ = 1f / dZ;
+
+		final float rayXEnterT = rayXEnterDist * idX, rayYEnterT = rayYEnterDist * idY, rayZEnterT = rayZEnterDist * idZ;
+		final float rayXLeaveT = rayXLeaveDist * idX, rayYLeaveT = rayYLeaveDist * idY, rayZLeaveT = rayZLeaveDist * idZ;
+
+		return resolveIntersect(rayXEnterT, rayXLeaveT, rayYEnterT, rayYLeaveT, rayZEnterT, rayZLeaveT, dX, dY, dZ, result);
 	}
 
 	private static float max (float f1, float f2, float f3) {
@@ -108,26 +170,69 @@ public final class BoundingBox {
 		}
 	}
 
-    /*public static void main(String[] args){
-        final boolean shouldBeTrue1D = UNIT_BOUNDING_BOX.intersectsRay(0.5f, 0.5f, 5f, 0f, 0f, -1f);
-        final boolean shouldBeTrue2D = UNIT_BOUNDING_BOX.intersectsRay(0.5f, 5f, 5f, 0f, -1f, -1f);
-        final boolean shouldBeTrue3D = UNIT_BOUNDING_BOX.intersectsRay(-1, -1, -1, 1, 1, 1);
-        System.out.println("1D "+(shouldBeTrue1D ? "passed" : "failed"));
-        System.out.println("2D "+(shouldBeTrue2D ? "passed" : "failed"));
-        System.out.println("3D "+(shouldBeTrue3D ? "passed" : "failed"));
+	/** Struct holding additional info from intersect methods. */
+	public static final class BoundingBoxIntersectResult {
+		private float t;
+		private Side side;
 
-        final boolean shouldBeFalse1D = UNIT_BOUNDING_BOX.intersectsRay(0.5f, 0.5f, 5f, 0f, -1f, 0f);
-        final boolean shouldBeFalse2D = UNIT_BOUNDING_BOX.intersectsRay(0.5f, 5f, 5f, -1f, 0f, -1f);
-        final boolean shouldBeFalse3D = UNIT_BOUNDING_BOX.intersectsRay(-1, -1, -1, 1, 0, 0);
-        System.out.println("!1D "+(!shouldBeFalse1D ? "passed" : "failed"));
-        System.out.println("!2D "+(!shouldBeFalse2D ? "passed" : "failed"));
-        System.out.println("!3D "+(!shouldBeFalse3D ? "passed" : "failed"));
+		/** Origin + T * Direction = point of ray's impact */
+		public float getT() {
+			return t;
+		}
 
-        final boolean shouldBeFalse1DRev = UNIT_BOUNDING_BOX.intersectsRay(0.5f, 0.5f, 5f, 0f, 0f, 1f);
-        final boolean shouldBeFalse2DRev = UNIT_BOUNDING_BOX.intersectsRay(0.5f, 5f, 5f, 0f, 1f, 1f);
-        final boolean shouldBeFalse3DRev = UNIT_BOUNDING_BOX.intersectsRay(-1, -1, -1, -1, -1, -1);
-        System.out.println("-1D "+(!shouldBeFalse1DRev ? "passed" : "failed"));
-        System.out.println("-2D "+(!shouldBeFalse2DRev ? "passed" : "failed"));
-        System.out.println("-3D "+(!shouldBeFalse3DRev ? "passed" : "failed"));
-    }*/
+		/** Side of impact */
+		public Side getSide() {
+			return side;
+		}
+	}
+
+	private static void testRay(String name, BoundingBox target, BoundingBox box, float oX, float oY, float oZ, float dX, float dY, float dZ, boolean correctResult, Side correctSide){
+		final BoundingBoxIntersectResult result = new BoundingBoxIntersectResult();
+		final boolean collided;
+		if(box == null){
+			collided = target.intersectsRay(oX, oY, oZ, dX, dY, dZ, result);
+		} else {
+			collided = target.intersectsBox(box, oX, oY, oZ, dX, dY, dZ, result);
+		}
+
+		if(collided && correctResult && result.getSide() == correctSide){
+			System.out.println(name+" collided to correct side");
+			System.out.flush();
+		}else if(!collided && !correctResult) {
+			System.out.println(name+" correctly did not collide");
+			System.out.flush();
+		} else {
+			final StringBuilder sb = new StringBuilder();
+			sb.append(name).append("\n\tExpected: ");
+			if(correctResult){
+				sb.append("Collision with ").append(correctSide);
+			} else {
+				sb.append("No collision");
+			}
+			sb.append("\n\tGot: ");
+			if(collided){
+				sb.append("Collision with ").append(result.getSide());
+			} else {
+				sb.append("No collision");
+			}
+			System.err.println(sb);
+			System.err.flush();
+		}
+	}
+
+    public static void main(String[] args){
+		testRay("X", UNIT_BOUNDING_BOX, null, 0.5f-1f, 0.5f, 0.5f, 1f, 0f, 0f, true, Side.WEST);
+
+		testRay("1D", UNIT_BOUNDING_BOX, null, 0.5f, 0.5f, 5f, 0f, 0f, -1f, true, null);
+        testRay("2D", UNIT_BOUNDING_BOX, null, 0.5f, 5f, 5f, 0f, -1f, -1f, true, null);
+        testRay("3D", UNIT_BOUNDING_BOX, null, -1, -1, -1, 1, 1, 1, true, null);
+
+        testRay("!1D", UNIT_BOUNDING_BOX, null, 0.5f, 0.5f, 5f, 0f, -1f, 0f, false, null);
+        testRay("!2D", UNIT_BOUNDING_BOX, null, 0.5f, 5f, 5f, -1f, 0f, -1f, false, null);
+        testRay("!3D", UNIT_BOUNDING_BOX, null, -1, -1, -1, 1, 0, 0, false, null);
+
+        testRay("-1D", UNIT_BOUNDING_BOX, null, 0.5f, 0.5f, 5f, 0f, 0f, 1f, false, null);
+        testRay("-2D", UNIT_BOUNDING_BOX, null, 0.5f, 5f, 5f, 0f, 1f, 1f, false, null);
+        testRay("-3D", UNIT_BOUNDING_BOX, null, -1, -1, -1, -1, -1, -1, false, null);
+    }
 }

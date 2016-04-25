@@ -20,8 +20,10 @@ import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.github.antag99.retinazer.EntitySystem;
-import darkyenus.blockotron.world.*;
+import darkyenus.blockotron.world.Block;
+import darkyenus.blockotron.world.Chunk;
+import darkyenus.blockotron.world.World;
+import darkyenus.blockotron.world.WorldObserver;
 
 /**
  * WorldObserver which takes care of rendering the {@link World} and in-game HUD.

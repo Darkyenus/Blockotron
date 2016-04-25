@@ -190,6 +190,7 @@ public final class World {
         private BlockFilter filter;
         private final Vector3 origin = new Vector3();
         private final Vector3 direction = new Vector3();
+        private final BoundingBox.BoundingBoxIntersectResult bBoxResult = new BoundingBox.BoundingBoxIntersectResult();
 
         private Block block;
         private Side side;
@@ -246,11 +247,14 @@ public final class World {
                 if(hitBox != BoundingBox.UNIT_BOUNDING_BOX){
                     final Vector3 origin = this.origin;
                     final Vector3 direction = this.direction;
+                    final BoundingBox.BoundingBoxIntersectResult bBoxResult = this.bBoxResult;
 
-					if (!hitBox.intersectsRay(origin.x - x, origin.y - y, origin.z - z, direction.x, direction.y, direction.z)) {
+                    if (!hitBox.intersectsRay(origin.x - x, origin.y - y, origin.z - z, direction.x, direction.y, direction.z, bBoxResult)) {
 						// Does not hit the custom hit box, keep searching
 						return false;
 					}
+
+                    side = bBoxResult.getSide();
                 }
 
                 this.block = block;
