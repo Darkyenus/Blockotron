@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.FloatCounter;
 import com.github.antag99.retinazer.EngineConfig;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.WorldRenderer;
@@ -31,9 +30,6 @@ public class GameScreen extends Screen {
     private ShapeRenderer shapeRenderer;
     private boolean debugOverlay = false;
 
-    private final float[] fpsLog = new float[128];
-    private int lastAdded = -1;
-
     private int playerEntity;
 
     @Override
@@ -55,19 +51,19 @@ public class GameScreen extends Screen {
             world.entityEngine().getMapper(Position.class).create(playerEntity).set(0, 0, 30);
             world.entityEngine().getMapper(Kinematic.class).create(playerEntity).setup(10f, true).setupHitbox(0.4f, 1.8f);
             world.entityEngine().getMapper(Orientation.class).create(playerEntity);
-            world.entityEngine().getMapper(SelfMotionCapable.class).create(playerEntity).setup(45f, 5f);
+            world.entityEngine().getMapper(SelfMotionCapable.class).create(playerEntity).setup(45f, 6f);
         }
     }
 
     @Override
     public void render(float delta) {
         Profiler.beginFrame();
-        update(delta);
+        update();
         draw();
         Profiler.endFrame();
     }
 
-    private void update(float delta){
+    private void update(){
         world.update();
         if(Gdx.input.isKeyJustPressed(Input.Keys.F3)){
             debugOverlay = !debugOverlay;

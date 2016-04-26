@@ -18,7 +18,7 @@ public class KinematicSystem extends EntityProcessorSystem {
 	private @Wire Mapper<Position> positionMapper;
 	private @Wire Mapper<Kinematic> kinematicMapper;
 
-	private static final Vector3 gravity = new Vector3(0, 0, -9.81f);
+	private static final Vector3 gravity = new Vector3(0, 0, -14f);
 
 	public KinematicSystem () {
 		super(Family.with(Position.class, Kinematic.class));
