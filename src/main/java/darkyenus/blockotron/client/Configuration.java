@@ -41,6 +41,7 @@ public final class Configuration {
                 for (AbstractConfig<?> config : all) {
                     if(config.name.equalsIgnoreCase(key)){
                         config.load(line.subSequence(eqIndex+1, line.length()));
+                        config.pollChanged();
                         break;
                     }
                 }
@@ -55,11 +56,21 @@ public final class Configuration {
     }
 
     public static void saveConfiguration(){
+        boolean anyChanged = false;
+
         final StringBuilder sb = new StringBuilder();
         for (AbstractConfig<?> config : all) {
             sb.append(config.name).append("=");
+            if(config.pollChanged()){
+                anyChanged = true;
+            }
             config.save(sb);
             sb.append('\n');
+        }
+
+        if(!anyChanged){
+            //No reason to save, nothing has changed
+            return;
         }
 
         try(FileWriter writer = new FileWriter(configFile, false)){
@@ -75,12 +86,29 @@ public final class Configuration {
 
         public final String name;
         public final T defaultValue;
-        public T value;
+        private T value;
+        private T saved;
 
         protected AbstractConfig(String name, T defaultValue) {
             this.name = name;
             this.defaultValue = defaultValue;
             this.value = defaultValue;
+        }
+
+        private boolean pollChanged(){
+            if(this.value != saved){
+                this.value = saved;
+                return true;
+            }
+            return false;
+        }
+
+        public final T get(){
+            return value;
+        }
+
+        public final void set(T value){
+            this.saved = value;
         }
 
         public abstract void load(CharSequence from);
@@ -96,14 +124,12 @@ public final class Configuration {
 
         @Override
         public void load(CharSequence from) {
-            if(ignoreCaseMatches("true", from) || ignoreCaseMatches("1", from)){
-                value = true;
-            }
+            set(ignoreCaseMatches("true", from) || ignoreCaseMatches("1", from));
         }
 
         @Override
         public void save(StringBuilder sb) {
-            sb.append(value ? "true" : "false");
+            sb.append(get() ? "true" : "false");
         }
     }
 
@@ -117,14 +143,14 @@ public final class Configuration {
         public void load(CharSequence from) {
             try {
                 final int percent = MathUtils.clamp(Integer.parseUnsignedInt(from.toString()), 0, 100);
-                value = percent / 100f;
+                set(percent / 100f);
             } catch (NumberFormatException ignored) {
             }
         }
 
         @Override
         public void save(StringBuilder sb) {
-            sb.append(MathUtils.clamp(MathUtils.roundPositive(value * 100f), 0, 100));
+            sb.append(MathUtils.clamp(MathUtils.roundPositive(get() * 100f), 0, 100));
         }
     }
 
@@ -137,14 +163,14 @@ public final class Configuration {
         @Override
         public void load(CharSequence from) {
             try {
-                value = Integer.parseInt(from.toString());
+                set(Integer.parseInt(from.toString()));
             } catch (NumberFormatException ignored) {
             }
         }
 
         @Override
         public void save(StringBuilder sb) {
-            sb.append(value);
+            sb.append(get());
         }
     }
 

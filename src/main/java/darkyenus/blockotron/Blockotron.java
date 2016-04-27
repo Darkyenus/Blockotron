@@ -14,11 +14,11 @@ public class Blockotron {
     public static void main(String[] args) {
         final Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         Configuration.loadConfiguration();
-        config.setBackBufferConfig(8, 8, 8, 8, 16, 0, Configuration.aaSamples.value);
+        config.setBackBufferConfig(8, 8, 8, 8, 16, 0, Configuration.aaSamples.get());
 
-        int windowWidth = Configuration.windowWidth.value;
-        int windowHeight = Configuration.windowHeight.value;
-        if(Configuration.fullscreen.value){
+        int windowWidth = Configuration.windowWidth.get();
+        int windowHeight = Configuration.windowHeight.get();
+        if(Configuration.fullscreen.get()){
             final Graphics.DisplayMode[] displayModes = Lwjgl3ApplicationConfiguration.getDisplayModes();
             Graphics.DisplayMode closest = Lwjgl3ApplicationConfiguration.getDisplayMode();
             int closestDifference = Integer.MAX_VALUE;
@@ -51,7 +51,7 @@ public class Blockotron {
             config.setWindowedMode(windowWidth, windowHeight);
         }
 
-        config.useVsync(Configuration.vSync.value);
+        config.useVsync(Configuration.vSync.get());
 
         new Lwjgl3Application(new Game(), config);
     }

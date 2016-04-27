@@ -53,13 +53,19 @@ public class OptionsScreen extends StageScreen {
             final Graphics.DisplayMode desktopDisplayMode = Gdx.graphics.getDisplayMode(Gdx.graphics.getMonitor());
             if(fullscreen){
                 Gdx.graphics.setFullscreenMode(desktopDisplayMode);
+                Configuration.fullscreen.set(true);
+                Configuration.windowWidth.set(desktopDisplayMode.width);
+                Configuration.windowWidth.set(desktopDisplayMode.height);
             } else {
+                Configuration.fullscreen.set(false);
                 Gdx.graphics.setWindowedMode((int)(desktopDisplayMode.width * 0.7f), (int)(desktopDisplayMode.height * 0.7f));
             }
         })).row();
 
-        //TODO Default vSync may not be "true"
-        table.add(createBooleanOption("V-Sync: On", "V-Sync: Off", true, vSync -> Gdx.graphics.setVSync(vSync))).row();
+        table.add(createBooleanOption("V-Sync: On", "V-Sync: Off", Configuration.vSync.get(), vSync -> {
+            Gdx.graphics.setVSync(vSync);
+            Configuration.vSync.set(vSync);
+        })).row();
 
         table.add().expand(0, 3).row();
 
@@ -67,7 +73,10 @@ public class OptionsScreen extends StageScreen {
         buttonStyle.font = Game.debugFont();
         buttonStyle.fontColor = Color.WHITE;
         buttonStyle.overFontColor = Color.CHARTREUSE;
-        table.add(createButton("Back", buttonStyle, (button)-> game.setScreen(backScreen))).row();
+        table.add(createButton("Back", buttonStyle, (button) -> {
+            Configuration.saveConfiguration();
+            game.setScreen(backScreen);
+        })).row();
 
         table.add().expand(0, 2).row();
 
