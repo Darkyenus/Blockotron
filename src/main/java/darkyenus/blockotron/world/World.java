@@ -2,10 +2,9 @@ package darkyenus.blockotron.world;
 
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.IntArray;
 import com.badlogic.gdx.utils.LongMap;
-import com.github.antag99.retinazer.Engine;
-import com.github.antag99.retinazer.EngineConfig;
-import com.github.antag99.retinazer.MapperListener;
+import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
@@ -31,41 +30,51 @@ public final class World {
         final Engine engine = new Engine(engineConfig);
         entityEngine = engine;
 
-        engine.getMapper(Position.class).setListener(new MapperListener<Position>() {
+        final EntityListener chunkPositionMapper = new EntityListener() {
+
+            private @Wire Mapper<Position> positionMapper;
+            private @Wire Mapper<BlockPosition> blockPositionMapper;
+
             @Override
-            public void componentAdded(int entity, Position position) {
-                final int chunkX = World.chunkCoord(position.x);
-                final int chunkY = World.chunkCoord(position.y);
-                final Chunk chunk = getChunk(chunkX, chunkY);
-                chunk.addEntity(entity);
+            public void inserted(EntitySet entities) {
+                process(entities, true);
             }
 
             @Override
-            public void componentRemoved(int entity, Position position) {
-                final int chunkX = World.chunkCoord(position.x);
-                final int chunkY = World.chunkCoord(position.y);
-                final Chunk chunk = getChunk(chunkX, chunkY);
-                chunk.removeEntity(entity);
-            }
-        });
-
-        engine.getMapper(BlockPosition.class).setListener(new MapperListener<BlockPosition>() {
-            @Override
-            public void componentAdded(int entity, BlockPosition position) {
-                final int chunkX = World.chunkCoord(position.x);
-                final int chunkY = World.chunkCoord(position.y);
-                final Chunk chunk = getChunk(chunkX, chunkY);
-                chunk.addEntity(entity);
+            public void removed(EntitySet entities) {
+                process(entities, false);
             }
 
-            @Override
-            public void componentRemoved(int entity, BlockPosition position) {
-                final int chunkX = World.chunkCoord(position.x);
-                final int chunkY = World.chunkCoord(position.y);
-                final Chunk chunk = getChunk(chunkX, chunkY);
-                chunk.removeEntity(entity);
+            private void process(EntitySet entitySet, boolean add){
+                final IntArray indices = entitySet.getIndices();
+                final int[] entities = indices.items;
+                final int size = indices.size;
+
+                for (int i = 0; i < size; i++) {
+                    final int entity = entities[i];
+
+                    final Position position = positionMapper.get(entity);
+                    final BlockPosition blockPosition = blockPositionMapper.get(entity);
+
+                    final int chunkX, chunkY;
+                    if(position != null){
+                        chunkX = World.chunkCoord(position.x);
+                        chunkY = World.chunkCoord(position.y);
+                        assert blockPosition == null : "Entity has both Position and BlockPosition!";
+                    } else {
+                        chunkX = World.chunkCoord(blockPosition.x);
+                        chunkY = World.chunkCoord(blockPosition.y);
+                    }
+
+                    final Chunk chunk = getChunk(chunkX, chunkY);
+                    if (add) chunk.addEntity(entity);
+                    else chunk.removeEntity(entity);
+                }
             }
-        });
+        };
+        engine.wire(chunkPositionMapper);
+        engine.getFamily(Family.with(Position.class)).addListener(chunkPositionMapper);
+        engine.getFamily(Family.with(BlockPosition.class)).addListener(chunkPositionMapper);
     }
 
     /** Get unique long-key under which the chunk at given chunk coordinates is saved at {@link #chunks}. */
