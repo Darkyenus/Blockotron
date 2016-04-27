@@ -12,7 +12,8 @@ lazy val blockotron = project in file(".") dependsOn retinazer
 
 lazy val retinazer = project in file("retinazer") / "retinazer" settings (
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-encoding", "UTF-8", "-g"),
-  libraryDependencies += "com.badlogicgames.gdx" % "gdx" % gdxVersion
+  libraryDependencies += "com.badlogicgames.gdx" % "gdx" % gdxVersion,
+  libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
   )
 
 libraryDependencies ++= Seq(
