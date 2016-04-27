@@ -18,7 +18,7 @@ public class MenuScreen extends StageScreen {
 
         final TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
         style.font = Game.debugFont();
-        final TextButton createWorld = new TextButton("Create world", style);
+        final TextButton createWorld = new TextButton("Create world!!--,,.", style);
         createWorld.addListener(new ClickListener(){
             @Override
             public void clicked(InputEvent event, float x, float y) {

@@ -4,7 +4,9 @@ import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import darkyenus.blockotron.render.BlockFaces;
+import darkyenus.blockotron.utils.BlockofontData;
 
 import java.io.File;
 
@@ -25,7 +27,7 @@ public class Game extends com.badlogic.gdx.Game {
 
     public static BitmapFont debugFont(){
         if(debugFont == null) {
-            debugFont = new BitmapFont();
+            debugFont = new BitmapFont(new BlockofontData(Gdx.files.local("resources/font/PressStart2P.blockofont")), (TextureRegion) null, true);
         }
         return debugFont;
     }
