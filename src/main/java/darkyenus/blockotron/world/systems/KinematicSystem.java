@@ -131,35 +131,37 @@ public class KinematicSystem extends EntityProcessorSystem {
 
 				dir.scl(len - castResult.getT());
 
+				final BoundingBox blockBox = castResult.getBlock().hitBox;
+
 				switch (side) {
 					case EAST:
-						newX = castResult.getX() + 1 - hitBox.offsetX;
+						newX = castResult.getX() + blockBox.offsetX + blockBox.sizeX - hitBox.offsetX;
 						dir.x = 0;
 						kinematic.velX = 0;
 						break;
 					case WEST:
-						newX = castResult.getX() - hitBox.offsetX - hitBox.sizeX;
+						newX = castResult.getX() + blockBox.offsetX - (hitBox.offsetX + hitBox.sizeX);
 						dir.x = 0;
 						kinematic.velX = 0;
 						break;
 					case NORTH:
-						newY = castResult.getY() + 1 - hitBox.offsetY;
+						newY = castResult.getY() + blockBox.offsetY + blockBox.sizeY - hitBox.offsetY;
 						dir.y = 0;
 						kinematic.velY = 0;
 						break;
 					case SOUTH:
-						newY = castResult.getY() - hitBox.offsetY - hitBox.sizeY;
+						newY = castResult.getY() + blockBox.offsetY - (hitBox.offsetY + hitBox.sizeY);
 						dir.y = 0;
 						kinematic.velY = 0;
 						break;
 					case TOP:
-						newZ = castResult.getZ() + 1 - hitBox.offsetZ;
+						newZ = castResult.getZ() + blockBox.offsetZ + blockBox.sizeZ - hitBox.offsetZ;
 						dir.z = 0;
 						kinematic.velZ = 0;
 						kinematic.onGround = true;
 						break;
 					case BOTTOM:
-						newZ = castResult.getZ() - hitBox.offsetZ - hitBox.sizeZ;
+						newZ = castResult.getZ() + blockBox.offsetZ - (hitBox.offsetZ + hitBox.sizeZ);
 						dir.z = 0;
 						kinematic.velZ = 0;
 						break;

@@ -18,8 +18,12 @@ public class BoundingBoxTest {
             collided = target.intersectsBox(box, oX, oY, oZ, dX, dY, dZ, result);
         }
 
-        if(collided && correctResult && result.getSide() == correctSide && (Float.isNaN(expectedT) || MathUtils.isEqual(expectedT, result.getT()))){
-            System.out.println(name+" collided to correct side");
+        if(collided && correctResult && (correctSide == null || result.getSide() == correctSide) && (Float.isNaN(expectedT) || MathUtils.isEqual(expectedT, result.getT()))){
+            if(correctSide == null){
+                System.out.println(name+" correctly collided");
+            } else {
+                System.out.println(name+" collided to correct side");
+            }
             System.out.flush();
         }else if(!collided && !correctResult) {
             System.out.println(name+" correctly did not collide");
@@ -43,6 +47,11 @@ public class BoundingBoxTest {
             System.err.println(sb);
             System.err.flush();
         }
+
+        try {
+            Thread.sleep(10);//Waiting for output streams to flush
+        } catch (InterruptedException ignored) {
+        }
     }
 
     public static void main(String[] args){
@@ -51,8 +60,8 @@ public class BoundingBoxTest {
         testRay("-Z", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, 0.0f, -10f, 0f, 0f, 1f, true, Side.BOTTOM, 9f);
 
         testRay("1D", UNIT_BOUNDING_BOX, null, 0.5f, 0.5f, 5f, 0f, 0f, -1f, true, Side.TOP);
-        testRay("2D", UNIT_BOUNDING_BOX, null, 0.5f, 5f, 5f, 0f, -0.9f, -1f, true, Side.NORTH);
-        testRay("3D", UNIT_BOUNDING_BOX, null, -1, -1, -1, 0.9f, 1, 0.9f, true, Side.WEST);
+        testRay("2D", UNIT_BOUNDING_BOX, null, 0.5f, 5f, 5f, 0f, -1f, -1f, true, null);
+        testRay("3D", UNIT_BOUNDING_BOX, null, -1, -1, -1, 1f, 1, 1f, true, null);
 
         testRay("!1D", UNIT_BOUNDING_BOX, null, 0.5f, 0.5f, 5f, 0f, -1f, 0f, false, null);
         testRay("!2D", UNIT_BOUNDING_BOX, null, 0.5f, 5f, 5f, -1f, 0f, -1f, false, null);
@@ -61,5 +70,24 @@ public class BoundingBoxTest {
         testRay("-1D", UNIT_BOUNDING_BOX, null, 0.5f, 0.5f, 5f, 0f, 0f, 1f, false, null);
         testRay("-2D", UNIT_BOUNDING_BOX, null, 0.5f, 5f, 5f, 0f, 1f, 1f, false, null);
         testRay("-3D", UNIT_BOUNDING_BOX, null, -1, -1, -1, -1, -1, -1, false, null);
+
+        testRay("OD", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, 0.0f, -10f, 0f, 0f, 0f, false, null);
+
+        testRay("Tight OD", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, 0.0f, -1f, 0f, 0f, 0f, false, null);
+        testRay("Tight 1D", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, -5.0f, -1f, 0f, 1f, 0f, false, null);
+
+        testRay("Very tight 1D+X", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, -5.0f, 0.0f, -1f + 1e-7f, 1f, 0f, 0f, false, null);
+        testRay("Very tight 1D-X", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 5.0f, 0.0f, -1f + 1e-7f, -1f, 0f, 0f, false, null);
+        testRay("Very tight 1D+Y", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, -5.0f, -1f + 1e-7f, 0f, 1f, 0f, false, null);
+        testRay("Very tight 1D-Y", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, 5.0f, -1f + 1e-7f, 0f, -1f, 0f, false, null);
+        testRay("Very tight 1D+Z", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, -1f + 1e-7f, -5.0f, 0f, 0f, 1f, false, null);
+        testRay("Very tight 1D-Z", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, -1f + 1e-7f, 5.0f, 0f, 0f, -1f, false, null);
+
+        testRay("Too tight 1D+X", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, -5.0f, 0.0f, -1f + 1e-3f, 1f, 0f, 0f, true, null);
+        testRay("Too tight 1D-X", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 5.0f, 0.0f, -1f + 1e-3f, -1f, 0f, 0f, true, null);
+        testRay("Too tight 1D+Y", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, -5.0f, -1f + 1e-3f, 0f, 1f, 0f, true, null);
+        testRay("Too tight 1D-Y", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, 5.0f, -1f + 1e-3f, 0f, -1f, 0f, true, null);
+        testRay("Too tight 1D+Z", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, -1f + 1e-3f, -5.0f, 0f, 0f, 1f, true, null);
+        testRay("Too tight 1D-Z", UNIT_BOUNDING_BOX, UNIT_BOUNDING_BOX, 0.0f, -1f + 1e-3f, 5.0f, 0f, 0f, -1f, true, null);
     }
 }

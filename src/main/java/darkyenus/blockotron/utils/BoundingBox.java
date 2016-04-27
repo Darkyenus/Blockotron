@@ -79,7 +79,7 @@ public final class BoundingBox {
 		final float SKIN_Z = SKIN * Math.signum(rayZLeaveDist - rayZEnterDist);
 
 		float rayXEnterT = (rayXEnterDist + SKIN_X) * idX, rayYEnterT = (rayYEnterDist + SKIN_Y) * idY, rayZEnterT = (rayZEnterDist + SKIN_Z) * idZ;
-		float rayXLeaveT = (rayXLeaveDist - SKIN_X) * idX, rayYLeaveT = (rayYLeaveDist - SKIN_Y) * idY, rayZLeaveT = (rayZLeaveDist + SKIN_Z) * idZ;
+		float rayXLeaveT = (rayXLeaveDist - SKIN_X) * idX, rayYLeaveT = (rayYLeaveDist - SKIN_Y) * idY, rayZLeaveT = (rayZLeaveDist - SKIN_Z) * idZ;
 
 		if(Float.isInfinite(idX)){
 			if(isOppositeInfinityOrZero(rayXEnterT, rayXLeaveT)){
@@ -115,8 +115,8 @@ public final class BoundingBox {
 		//Return true if all are in before any is out
 		if(allIn > -1e-3f && anyOut > 0 && allIn < anyOut) {
 			if(result != null){
-				result.t = allIn;
-
+				//Compute allIn again, without skin (TODO: Make this more efficient)
+				result.t = max((rayXEnterDist) * idX, (rayYEnterDist) * idY, (rayZEnterDist) * idZ);
 				if(allIn == rayXEnterT){
 					result.side = dX < 0 ? Side.EAST : Side.WEST;//Or west!
 				} else if(allIn == rayYEnterT){
