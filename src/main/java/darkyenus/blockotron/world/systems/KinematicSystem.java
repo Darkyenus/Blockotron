@@ -1,8 +1,10 @@
 package darkyenus.blockotron.world.systems;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.github.antag99.retinazer.*;
+import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.world.BlockFilter;
 import darkyenus.blockotron.world.Chunk;
 import darkyenus.blockotron.world.Side;
@@ -65,6 +67,14 @@ public class KinematicSystem extends EntityProcessorSystem {
 		kinematic.velY += realAccY * timeD;
 		kinematic.velZ += accZ * timeD;
 
+		if(accX == 0 && MathUtils.isZero(kinematic.velX, 1e-3f)){
+			kinematic.velX = 0;
+		}
+
+		if(accY == 0 && MathUtils.isZero(kinematic.velY, 1e-3f)){
+			kinematic.velY = 0;
+		}
+
 		if (kinematic.hitBox == null) {
 			position.add(deltaX, deltaY, deltaZ);
 		} else {
@@ -101,7 +111,8 @@ public class KinematicSystem extends EntityProcessorSystem {
         final float len = dir.len();
         dir.nor();
 
-        final World.SweepRayCastResult castResult = world.getBlockOnSweepRay(kinematic.hitBox, pos, dir, len, BlockFilter.NON_COLLIDABLES);
+		final BoundingBox hitBox = kinematic.hitBox;
+		final World.SweepRayCastResult castResult = world.getBlockOnSweepRay(hitBox, pos, dir, len, BlockFilter.NON_COLLIDABLES);
 
         if(castResult == null){
             position.add(x,y,z);
@@ -112,28 +123,57 @@ public class KinematicSystem extends EntityProcessorSystem {
 			final float dPosY = dir.y * castResult.getT();
 			final float dPosZ = dir.z * castResult.getT();
 
-			position.add(dPosX, dPosY, dPosZ);
-
             if(side != null){
+				//Set the position to be exactly next to the side
+				double newX = position.x + dPosX;
+				double newY = position.y + dPosY;
+				float newZ = position.z + dPosZ;
+
 				dir.scl(len - castResult.getT());
 
-                if(side.offX != 0){
-                    dir.x = 0;
-                } else if(side.offY != 0){
-                    dir.y = 0;
-                } else if(side.offZ != 0) {
-                    dir.z = 0;
-					if(side == Side.TOP){
+				switch (side) {
+					case EAST:
+						newX = castResult.getX() + 1 - hitBox.offsetX;
+						dir.x = 0;
+						kinematic.velX = 0;
+						break;
+					case WEST:
+						newX = castResult.getX() - hitBox.offsetX - hitBox.sizeX;
+						dir.x = 0;
+						kinematic.velX = 0;
+						break;
+					case NORTH:
+						newY = castResult.getY() + 1 - hitBox.offsetY;
+						dir.y = 0;
+						kinematic.velY = 0;
+						break;
+					case SOUTH:
+						newY = castResult.getY() - hitBox.offsetY - hitBox.sizeY;
+						dir.y = 0;
+						kinematic.velY = 0;
+						break;
+					case TOP:
+						newZ = castResult.getZ() + 1 - hitBox.offsetZ;
+						dir.z = 0;
 						kinematic.velZ = 0;
 						kinematic.onGround = true;
-					}
-                }
+						break;
+					case BOTTOM:
+						newZ = castResult.getZ() - hitBox.offsetZ - hitBox.sizeZ;
+						dir.z = 0;
+						kinematic.velZ = 0;
+						break;
+				}
 
-                if(dir.len2() > 0.000001f && remainingBounces > 0){
+				position.set(newX, newY, newZ);
+
+                if(dir.len2() > 0.00001f && remainingBounces > 0){
                     //Slide
                     moveBy(position, kinematic, dir.x, dir.y, dir.z, --remainingBounces);
                 }
-            }
+            } else {
+				position.add(dPosX, dPosY, dPosZ);
+			}
         }
 	}
 }

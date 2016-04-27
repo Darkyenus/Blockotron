@@ -73,8 +73,13 @@ public final class BoundingBox {
 		final float idY = 1f / dY;
 		final float idZ = 1f / dZ;
 
-		float rayXEnterT = rayXEnterDist * idX, rayYEnterT = rayYEnterDist * idY, rayZEnterT = rayZEnterDist * idZ;
-		float rayXLeaveT = rayXLeaveDist * idX, rayYLeaveT = rayYLeaveDist * idY, rayZLeaveT = rayZLeaveDist * idZ;
+		final float SKIN = 1e-4f;
+		final float SKIN_X = SKIN * Math.signum(rayXLeaveDist - rayXEnterDist);
+		final float SKIN_Y = SKIN * Math.signum(rayYLeaveDist - rayYEnterDist);
+		final float SKIN_Z = SKIN * Math.signum(rayZLeaveDist - rayZEnterDist);
+
+		float rayXEnterT = (rayXEnterDist + SKIN_X) * idX, rayYEnterT = (rayYEnterDist + SKIN_Y) * idY, rayZEnterT = (rayZEnterDist + SKIN_Z) * idZ;
+		float rayXLeaveT = (rayXLeaveDist - SKIN_X) * idX, rayYLeaveT = (rayYLeaveDist - SKIN_Y) * idY, rayZLeaveT = (rayZLeaveDist + SKIN_Z) * idZ;
 
 		if(Float.isInfinite(idX)){
 			if(isOppositeInfinityOrZero(rayXEnterT, rayXLeaveT)){
@@ -108,7 +113,7 @@ public final class BoundingBox {
 
 		//Reject if allIn is negative, because it means that the ray points in the opposite direction
 		//Return true if all are in before any is out
-		if(allIn >= -0.001f && allIn < anyOut){
+		if(allIn > -1e-3f && anyOut > 0 && allIn < anyOut) {
 			if(result != null){
 				result.t = allIn;
 
