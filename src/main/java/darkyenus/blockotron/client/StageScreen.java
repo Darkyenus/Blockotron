@@ -18,7 +18,6 @@ public abstract class StageScreen extends Screen {
     public void show() {
         if(stage == null){
             stage = new Stage(viewport, Game.uiBatch());
-            stage.setDebugAll(true);
             createStage();
         }
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
