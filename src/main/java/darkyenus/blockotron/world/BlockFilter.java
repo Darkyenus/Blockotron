@@ -10,5 +10,5 @@ public interface BlockFilter {
 
     BlockFilter NO_AIR = block -> block != Air.AIR;
 
-    BlockFilter NON_COLLIDABLES = block -> block != Air.AIR;//TODO Proper filtering
+    BlockFilter COLLIDABLE = Block::isCollidable;
 }

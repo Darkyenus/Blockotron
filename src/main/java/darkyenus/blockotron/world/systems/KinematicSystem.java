@@ -112,7 +112,7 @@ public class KinematicSystem extends EntityProcessorSystem {
         dir.nor();
 
 		final BoundingBox hitBox = kinematic.hitBox;
-		final World.SweepRayCastResult castResult = world.getBlockOnSweepRay(hitBox, pos, dir, len, BlockFilter.NON_COLLIDABLES);
+		final World.SweepRayCastResult castResult = world.getBlockOnSweepRay(hitBox, pos, dir, len, BlockFilter.COLLIDABLE);
 
         if(castResult == null){
             position.add(x,y,z);
