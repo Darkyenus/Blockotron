@@ -8,7 +8,6 @@ import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
-import darkyenus.blockotron.world.components.BlockPosition;
 import darkyenus.blockotron.world.components.Position;
 
 /**
@@ -33,7 +32,6 @@ public final class World {
         final EntityListener chunkPositionMapper = new EntityListener() {
 
             private @Wire Mapper<Position> positionMapper;
-            private @Wire Mapper<BlockPosition> blockPositionMapper;
 
             @Override
             public void inserted(EntitySet entities) {
@@ -54,17 +52,10 @@ public final class World {
                     final int entity = entities[i];
 
                     final Position position = positionMapper.get(entity);
-                    final BlockPosition blockPosition = blockPositionMapper.get(entity);
 
                     final int chunkX, chunkY;
-                    if(position != null){
-                        chunkX = World.chunkCoord(position.x);
-                        chunkY = World.chunkCoord(position.y);
-                        assert blockPosition == null : "Entity has both Position and BlockPosition!";
-                    } else {
-                        chunkX = World.chunkCoord(blockPosition.x);
-                        chunkY = World.chunkCoord(blockPosition.y);
-                    }
+                    chunkX = World.chunkCoord(position.x);
+                    chunkY = World.chunkCoord(position.y);
 
                     final Chunk chunk = getChunk(chunkX, chunkY);
                     if (add) chunk.addEntity(entity);
@@ -74,7 +65,6 @@ public final class World {
         };
         engine.wire(chunkPositionMapper);
         engine.getFamily(Family.with(Position.class)).addListener(chunkPositionMapper);
-        engine.getFamily(Family.with(BlockPosition.class)).addListener(chunkPositionMapper);
     }
 
     /** Get unique long-key under which the chunk at given chunk coordinates is saved at {@link #chunks}. */
