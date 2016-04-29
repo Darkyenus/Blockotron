@@ -1,7 +1,10 @@
 package darkyenus.blockotron.world;
 
 import com.badlogic.gdx.utils.IntArray;
+import com.badlogic.gdx.utils.IntIntMap;
+import com.github.antag99.retinazer.Engine;
 import darkyenus.blockotron.world.blocks.Air;
+import darkyenus.blockotron.world.components.BlockPosition;
 
 import java.util.Arrays;
 
@@ -33,8 +36,11 @@ public final class Chunk {
      * Byte holds flags from {@link Side} */
     private final byte[] occlusion = new byte[blocks.length];
 
-    /** IDs of entities on this chunk */
+    /** IDs of entities with {@link darkyenus.blockotron.world.components.Position} on this chunk */
     private final IntArray entities = new IntArray(false, 64);
+    /** IDs of entities with {@link darkyenus.blockotron.world.components.BlockPosition} on this chunk
+     * with key being their {@link #coord(int, int, int)} of in-chunk coords. */
+    private final IntIntMap blockEntities = new IntIntMap();
 
     //Iteration hints
     private int dynamicMin = 0, dynamicMax = -1, staticMin = 0, staticMax = -1;
@@ -75,7 +81,26 @@ public final class Chunk {
         final int coord = coord(x, y, z);
         final Block old = blocks[coord];
         if (old == block) return;
-        blocks[coord] = block;
+		blocks[coord] = block;
+
+		// Remove old block entity
+		final Engine entityEngine = world.entityEngine();
+		if (old.hasEntity()) {
+			final int removed = blockEntities.remove(coord, -1);
+			assert removed != -1 : "Block " + block + " didn't have associated entity even though it should have.";
+			entityEngine.destroyEntity(removed);
+		}
+
+		// Add new block entity
+		if (block.hasEntity()) {
+			final int entity = entityEngine.createEntity();
+			final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
+			blockPosition.x = this.x * CHUNK_SIZE + x;
+			blockPosition.y = this.y * CHUNK_SIZE + y;
+			blockPosition.z = z;
+			block.initializeEntity(world, entity);
+			blockEntities.put(coord, entity);
+		}
 
         //Update iterator hints
         if(block != Air.AIR) {

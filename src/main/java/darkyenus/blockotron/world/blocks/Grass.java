@@ -23,10 +23,6 @@ public class Grass extends Block {
 
     @Override
     public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {
-        if(GRASS.equals(world.getLoadedBlock(x, y, z + 1))) {
-            batch.createBlock(drawX, drawY, drawZ, occlusion, TOP, BOTTOM, BOTTOM);
-        } else {
-            batch.createBlock(drawX, drawY, drawZ, occlusion, TOP, SIDE, BOTTOM);
-        }
+        batch.createBlock(drawX, drawY, drawZ, occlusion, TOP, SIDE, BOTTOM);
     }
 }

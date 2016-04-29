@@ -20,6 +20,9 @@ public abstract class Block {
 	/** Can the player replace this block by placing block on this block? (For example for "tall grass" on which player most
 	 * certainly does not want to build on) */
 	public static final byte REPLACEABLE = 1 << 4;
+    /** Should this block have associated entity?
+     * @see #initializeEntity(World, int)  */
+    public static final byte HAS_ENTITY = 1 << 5;
 
 	/** Unique ID of this Block type. For base block is just simple name. For mod provided blocks, it has form of
 	 * "mod_classifier.name". */
@@ -70,6 +73,16 @@ public abstract class Block {
 	public final boolean isReplaceable () {
 		return (flags & REPLACEABLE) != 0;
 	}
+
+    /** @see #HAS_ENTITY */
+    public final boolean hasEntity() {
+        return (flags & HAS_ENTITY) != 0;
+    }
+
+    /** Called when block of this type is added to a world.
+     * The entity is already created and has BlockPosition component.
+     * This method should add and setup necessary components. */
+    protected void initializeEntity(World world, int entity){}
 
 	/** Draw the block in the world.
 	 * @param world in which the blocks is being rendered
