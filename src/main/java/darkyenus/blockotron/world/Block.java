@@ -1,3 +1,4 @@
+
 package darkyenus.blockotron.world;
 
 import darkyenus.blockotron.render.RectangleMeshBatch;
@@ -8,37 +9,74 @@ import darkyenus.blockotron.utils.BoundingBox;
  */
 public abstract class Block {
 
-    public final String id;
-    /** Render: Does have transparent textures/sides? */
-    public final boolean transparent;
-    /** Render: Does this completely obscure faces of neighbors? */
-    public final boolean occluding;
-    /** Render: Does need to be rendered each frame? (Is it animated?) (static blocks are buffered) */
-    public final boolean dynamic;
-    /** Non-null collision bounding block of this block. */
-    public final BoundingBox hitBox;
+	/** Render: Does have transparent textures/sides? */
+	public static final byte TRANSPARENT = 1;
+	/** Render: Does this completely obscure faces of neighbors? */
+	public static final byte OCCLUDING = 1 << 1;
+	/** Render: Does need to be rendered each frame? (Is it animated?) (static blocks are buffered) */
+	public static final byte DYNAMIC = 1 << 2;
+	/** Do entities collide with this block or is it walk-through? */
+	public static final byte COLLIDABLE = 1 << 3;
+	/** Can the player replace this block by placing block on this block? (For example for "tall grass" on which player most
+	 * certainly does not want to build on) */
+	public static final byte REPLACEABLE = 1 << 4;
 
-    protected Block(String id, boolean transparent, boolean occluding, boolean dynamic) {
-        this.id = id;
-        this.transparent = transparent;
-        this.occluding = occluding;
-        this.dynamic = dynamic;
-        this.hitBox = BoundingBox.UNIT_BOUNDING_BOX;
-    }
+	/** Unique ID of this Block type. For base block is just simple name. For mod provided blocks, it has form of
+	 * "mod_classifier.name". */
+	public final String id;
 
-    protected Block(String id, boolean transparent, boolean occluding, boolean dynamic, BoundingBox hitBox) {
-        this.id = id;
-        this.transparent = transparent;
-        this.occluding = occluding;
-        this.dynamic = dynamic;
-        this.hitBox = hitBox;
-    }
+	/** Contains bit flags with characteristics of this block.
+	 * @see #TRANSPARENT
+	 * @see #OCCLUDING
+	 * @see #DYNAMIC */
+	public final byte flags;
 
-    /** Draw the block in the world.
-     * @param world in which the blocks is being rendered
-     * @param x (y, z) of the block in the world
-     * @param drawX (drawY, drawZ) to pass to the batch
-     * @param occlusion mask of the block. Can be passed directly to the batch. See {@link Chunk#getOcclusionMask(int, int, int)}
-     * @param batch to be used for drawing */
-    public abstract void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch);
+	/** Non-null collision bounding block of this block. */
+	public final BoundingBox hitBox;
+
+	protected Block (String id, int flags) {
+		this.id = id;
+		this.flags = (byte)flags;
+		this.hitBox = BoundingBox.UNIT_BOUNDING_BOX;
+	}
+
+	protected Block (String id, int flags, BoundingBox hitBox) {
+		this.id = id;
+		this.flags = (byte)flags;
+		this.hitBox = hitBox;
+	}
+
+	/** @see #TRANSPARENT */
+	public final boolean isTransparent () {
+		return (flags & TRANSPARENT) != 0;
+	}
+
+	/** @see #OCCLUDING */
+	public final boolean isOccluding () {
+		return (flags & OCCLUDING) != 0;
+	}
+
+	/** @see #DYNAMIC */
+	public final boolean isDynamic () {
+		return (flags & DYNAMIC) != 0;
+	}
+
+	/** @see #COLLIDABLE */
+	public final boolean isCollidable () {
+		return (flags & COLLIDABLE) != 0;
+	}
+
+	/** @see #REPLACEABLE */
+	public final boolean isReplaceable () {
+		return (flags & REPLACEABLE) != 0;
+	}
+
+	/** Draw the block in the world.
+	 * @param world in which the blocks is being rendered
+	 * @param x (y, z) of the block in the world
+	 * @param drawX (drawY, drawZ) to pass to the batch
+	 * @param occlusion mask of the block. Can be passed directly to the batch. See {@link Chunk#getOcclusionMask(int, int, int)}
+	 * @param batch to be used for drawing */
+	public abstract void render (World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion,
+		RectangleMeshBatch batch);
 }

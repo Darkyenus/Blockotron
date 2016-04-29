@@ -91,14 +91,14 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
     @Override
     public void blockChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, Block from, Block to) {
-        if(!from.dynamic || !to.dynamic) {
+        if(!from.isDynamic() || !to.isDynamic()) {
             renderableChunks.get(World.chunkCoordKey(chunk.x, chunk.y)).staticDirty = true;
         }
     }
 
     @Override
     public void blockOcclusionChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, byte from, byte to) {
-        if(!chunk.getBlock(inChunkX, inChunkY, inChunkZ).dynamic){
+        if(!chunk.getBlock(inChunkX, inChunkY, inChunkZ).isDynamic()){
             renderableChunks.get(World.chunkCoordKey(chunk.x, chunk.y)).staticDirty = true;
         }
     }
@@ -167,7 +167,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             final RectangleMeshBatch batch = this.staticBatch;
             batch.begin();
             chunk.forEachStaticNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                if(block.transparent){
+                if(block.isTransparent()){
                     batch.beginTransparent(cX, cY, cZ);
                     block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
                     batch.endTransparent();
@@ -186,7 +186,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             final RectangleMeshBatch batch = this.dynamicBatch;
             batch.begin();
             chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                if(block.transparent){
+                if(block.isTransparent()){
                     batch.beginTransparent(cX, cY, cZ);
                     block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
                     batch.endTransparent();

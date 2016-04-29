@@ -18,7 +18,7 @@ public class Grass extends Block {
     private static final BlockFaceTexture BOTTOM = BlockFaces.getBlockFace("grass_bottom");
 
     private Grass() {
-        super("grass", false, true, false);
+        super("grass", OCCLUDING | COLLIDABLE);
     }
 
     @Override

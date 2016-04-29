@@ -17,7 +17,7 @@ public class Flowerpot extends Block {
 	public static final Flowerpot FLOWERPOT = new Flowerpot();
 
 	private Flowerpot () {
-		super("flowerpot", false, false, false, new BoundingBox(0.25f, 0.25f, 0f, 0.5f, 0.5f, 0.5f));
+		super("flowerpot", COLLIDABLE, new BoundingBox(0.25f, 0.25f, 0f, 0.5f, 0.5f, 0.5f));
 	}
 
 	private static final BlockFaceTexture TOP = BlockFaces.getBlockFace("flowerpot_top");

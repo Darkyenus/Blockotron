@@ -16,7 +16,7 @@ public class DebugBlock extends Block {
     private static final BlockFaceTexture texture = BlockFaces.getBlockFace("debugBlock");
 
     private DebugBlock() {
-        super("debugBlock", false, true, false);
+        super("debugBlock", OCCLUDING | COLLIDABLE);
     }
 
     @Override

@@ -12,7 +12,7 @@ public class Air extends Block {
     public static final Air AIR = new Air();
 
     private Air() {
-        super("air", true, true, false);
+        super("air", TRANSPARENT | OCCLUDING);
     }
 
     @Override
