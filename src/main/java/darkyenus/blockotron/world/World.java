@@ -8,6 +8,7 @@ import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
+import darkyenus.blockotron.world.blocks.Air;
 import darkyenus.blockotron.world.components.Position;
 
 /**
@@ -21,6 +22,11 @@ public final class World {
     private final Array<WorldObserver> observers = new Array<>(false, 8, WorldObserver.class);
 
     private final Engine entityEngine;
+
+    /** Update delta will never be larger than this. This does mean that in extreme cases, game will slow down.
+     * Main goal is not to slow down but to prevent huge amount of processing when game loop stops for a long amount of
+     * time and systems can't catch up, for example while debugging. */
+    private static final float MAX_UPDATE_DELTA = 0.5f;
 
     public World (ChunkProvider chunkProvider, EngineConfig engineConfig) {
         this.chunkProvider = chunkProvider;
@@ -94,6 +100,10 @@ public final class World {
         return chunks.get(chunkCoordKey(x, y));
     }
 
+    public Iterable<Chunk> getLoadedChunks(){
+        return chunks.values();
+    }
+
     /** Translate a world x or y coordinate into a chunk-coordinate.
      * @see Chunk#x */
     public static int chunkCoord(double xy){
@@ -145,7 +155,7 @@ public final class World {
         final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
         final int cx = inChunkCoordXY(x);
         final int cy = inChunkCoordXY(y);
-        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return null;
+        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return Air.AIR;
         return chunk.getBlock(cx, cy, z);
     }
 
@@ -218,8 +228,11 @@ public final class World {
         }
     }
 
-    public void update(){
-        entityEngine.update();
+    public void update(float rawDelta){
+        if(rawDelta > MAX_UPDATE_DELTA){
+            rawDelta = MAX_UPDATE_DELTA;
+        }
+        entityEngine.update(rawDelta);
     }
 
     public Engine entityEngine(){

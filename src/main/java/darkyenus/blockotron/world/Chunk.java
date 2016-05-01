@@ -55,7 +55,7 @@ public final class Chunk {
     /** Maps in-chunk coordinates to unique int key, which is its index in {@link #blocks}.
      * Correct result is guaranteed only when coordinates are valid:
      * x and y >= 0 && < CHUNK_SIZE, z >= 0 && < CHUNK_HEIGHT */
-    private int coord(int x, int y, int z) {
+    public static int coord(int x, int y, int z) {
         return x | y << 4 | z << 8;
     }
 
@@ -312,9 +312,14 @@ public final class Chunk {
         return entities.removeValue(entity);
     }
 
-    /** Get the list of all entities on this chunk. Do not modify, use for iteration only. */
+    /** Get the list of all non-block entities on this chunk. Do not modify, use for iteration only. */
     public IntArray entities(){
         return entities;
+    }
+
+    /** Get the list of all block entities on this chunk. Do not modify, use for iteration only. */
+    public IntIntMap blockEntities(){
+        return blockEntities;
     }
 
     public interface BlockIterator {

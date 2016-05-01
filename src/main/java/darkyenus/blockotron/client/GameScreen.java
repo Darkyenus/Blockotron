@@ -18,6 +18,7 @@ import darkyenus.blockotron.world.components.*;
 import darkyenus.blockotron.world.debug.DebugWorldGenerator;
 import darkyenus.blockotron.world.systems.KinematicSystem;
 import darkyenus.blockotron.world.systems.PlayerInputSystem;
+import darkyenus.blockotron.world.systems.RandomBlockBehaviorSystem;
 
 /**
  *
@@ -39,6 +40,7 @@ public class GameScreen extends Screen {
             world = new World(
                     new GeneratorChunkProvider(new DebugWorldGenerator()),
                     new EngineConfig()
+                            .addSystem(new RandomBlockBehaviorSystem())
                             .addSystem(new PlayerInputSystem())
                             .addSystem(new KinematicSystem())
                             .addWireResolver(new SelectionWireResolver(renderer)));
@@ -64,7 +66,7 @@ public class GameScreen extends Screen {
     }
 
     private void update(){
-        world.update();
+        world.update(Gdx.graphics.getDeltaTime());
         if(Gdx.input.isKeyJustPressed(Input.Keys.F3)){
             debugOverlay = !debugOverlay;
         }

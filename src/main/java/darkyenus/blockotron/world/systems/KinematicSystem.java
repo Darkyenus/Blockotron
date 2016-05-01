@@ -1,6 +1,5 @@
 package darkyenus.blockotron.world.systems;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.github.antag99.retinazer.*;
@@ -29,14 +28,12 @@ public class KinematicSystem extends EntityProcessorSystem {
 	private final Vector3 TMP1 = new Vector3(), TMP2 = new Vector3();
 
 	@Override
-	protected void process (int entity) {
+	protected void process (final int entity, final float timeD) {
 		final Position position = positionMapper.get(entity);
 		final Kinematic kinematic = kinematicMapper.get(entity);
 
 		final int oldChunkX = World.chunkCoord(position.x);
 		final int oldChunkY = World.chunkCoord(position.y);
-
-		final float timeD = Gdx.graphics.getDeltaTime();
 
 		double velX = kinematic.velX;
 		double velY = kinematic.velY;

@@ -32,11 +32,11 @@ public class PlayerInputSystem extends EntityProcessorSystem {
     }
 
     @Override
-    protected void processEntities() {
+    protected void processEntities(float delta) {
         IntArray indices = getEntities().getIndices();
         int[] items = indices.items;
         if(indices.size >= 1){
-            process(items[0]);
+            process(items[0], delta);
             for (int i = 1, n = indices.size; i < n; i++) {
                 System.out.println("Removing additional player tag on entity "+items[i]);
                 playedMapper.remove(items[i]);
@@ -47,7 +47,7 @@ public class PlayerInputSystem extends EntityProcessorSystem {
     private final Vector3 speedTMP = new Vector3(), positionTMP = new Vector3(), faceTMP = new Vector3();
 
     @Override
-    protected void process(int entity) {
+    protected void process(int entity, float delta) {
         final Position position = positionMapper.get(entity);
         final Kinematic kinematic = kinematicMapper.get(entity);
         final Orientation orientation = orientationMapper.get(entity);
