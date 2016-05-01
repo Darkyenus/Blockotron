@@ -16,8 +16,7 @@ import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.world.BlockFilter;
 import darkyenus.blockotron.world.World;
 import darkyenus.blockotron.world.blocks.Air;
-import darkyenus.blockotron.world.blocks.Glass;
-import darkyenus.blockotron.world.blocks.Grass;
+import darkyenus.blockotron.world.blocks.BasicBlocks;
 
 /**
  * Draws the wireframe cursor over the selected block.
@@ -56,9 +55,9 @@ public class WorldCursorOverlay implements RenderableProvider {
 
             //DEBUG world editing
             if(Gdx.input.isKeyJustPressed(Input.Keys.C) && target.getSide() != null){
-                world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, Grass.GRASS);
+                world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, BasicBlocks.GRASS);
             } else if(Gdx.input.isKeyJustPressed(Input.Keys.R) && target.getSide() != null){
-                world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, Glass.GLASS);
+                world.setBlock(target.getX() + target.getSide().offX, target.getY() + target.getSide().offY, target.getZ() + target.getSide().offZ, BasicBlocks.GLASS);
             } else if(Gdx.input.isKeyJustPressed(Input.Keys.F)){
                 world.setBlock(target.getX(), target.getY(), target.getZ(), Air.AIR);
             }

@@ -15,10 +15,10 @@ public class BlockRegistry {
     static {
         //TODO: Temporary block registration place
         register(Air.AIR);
-        register(Dirt.DIRT);
+        register(BasicBlocks.DIRT);
         register(Flowerpot.FLOWERPOT);
-        register(Glass.GLASS);
-        register(Grass.GRASS);
+        register(BasicBlocks.GLASS);
+        register(BasicBlocks.GRASS);
     }
 
     private static final ObjectMap<String, Block> registeredBlocks = new ObjectMap<>();
