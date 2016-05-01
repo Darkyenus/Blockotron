@@ -57,7 +57,24 @@ public class DebugWorldGenerator implements WorldGenerator {
                 }
                 chunk.setBlock(x,y,height, BasicBlocks.GRASS);
 
+                if(x == 6 && y == 6){
+                    spawnTree(chunk, x, y, height + 1);
+                }
             }
+        }
+    }
+
+    private void spawnTree(Chunk chunk, int x, int y, int z){
+        int trunkHeight = MathUtils.random(4, 8);
+        for (int oX = -2; oX <= 2; oX++) {
+            for (int oY = -2; oY <= 2; oY++) {
+                for (int oZ = trunkHeight-3; oZ < trunkHeight + 2; oZ++) {
+                    chunk.setBlock(x + oX, y + oY, z + oZ, BasicBlocks.LEAVES);
+                }
+            }
+        }
+        for (int i = 0; i < trunkHeight; i++) {
+            chunk.setBlock(x, y, z+i, BasicBlocks.WOOD_LOG);
         }
     }
 }

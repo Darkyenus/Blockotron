@@ -19,6 +19,8 @@ public class BlockRegistry {
         register(Flowerpot.FLOWERPOT);
         register(BasicBlocks.GLASS);
         register(BasicBlocks.GRASS);
+        register(BasicBlocks.WOOD_LOG);
+        register(BasicBlocks.LEAVES);
     }
 
     private static final ObjectMap<String, Block> registeredBlocks = new ObjectMap<>();

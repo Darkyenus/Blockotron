@@ -37,4 +37,7 @@ public final class BasicBlocks {
             }).build();
     public static final Block DIRT = SimpleBlock.create("dirt", OCCLUDING | COLLIDABLE).withTexture("grass_bottom").build();
     public static final Block GLASS = SimpleBlock.create("glass", TRANSPARENT | OCCLUDING | COLLIDABLE).withTexture("glass").build();
+
+    public static final Block WOOD_LOG = SimpleBlock.create("wood_log", OCCLUDING | COLLIDABLE).withTexture("wood_top").withSideTexture("wood_side").build();
+    public static final Block LEAVES = SimpleBlock.create("leaves", TRANSPARENT | OCCLUDING | COLLIDABLE).withTexture("leaves").build();
 }
