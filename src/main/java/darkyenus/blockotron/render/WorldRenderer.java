@@ -30,6 +30,8 @@ import darkyenus.blockotron.world.WorldObserver;
  */
 public class WorldRenderer implements WorldObserver, RenderableProvider {
 
+    public int debug_chunksConsidered, debug_chunksRendered;
+
     public final PerspectiveCamera camera = new PerspectiveCamera();{
         camera.fieldOfView = 75;
         camera.up.set(0,0,1);
@@ -115,8 +117,11 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         int viewDistanceChunks = MathUtils.ceilPositive(camera.far / Chunk.CHUNK_SIZE);
         final Frustum frustum = camera.frustum;
 
+        int total = 0, passed = 0;
+
         for (int x = cameraChunkX - viewDistanceChunks; x < cameraChunkX + viewDistanceChunks; x++) {
             for (int y = cameraChunkY - viewDistanceChunks; y < cameraChunkY + viewDistanceChunks; y++) {
+                total++;
                 final long key = World.chunkCoordKey(x, y);
                 ChunkRenderable chunk = renderableChunks.get(key);
                 if(chunk == null){
@@ -132,6 +137,9 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
                 chunk.getRenderables(renderables, pool);
             }
         }
+
+        debug_chunksConsidered = total;
+        debug_chunksRendered = passed;
     }
 
     /** Takes care of building chunk block meshes. */
