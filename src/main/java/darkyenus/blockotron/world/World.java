@@ -85,7 +85,7 @@ public final class World {
         if(existing == null){
             final Chunk newChunk = chunkProvider.getChunk(x, y);
             chunks.put(key, newChunk);
-            newChunk.loaded = true;
+            newChunk.setLoaded(true);
             for (WorldObserver observer : observers()) {
                 observer.chunkLoaded(newChunk);
             }

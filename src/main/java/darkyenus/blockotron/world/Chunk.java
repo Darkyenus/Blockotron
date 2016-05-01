@@ -27,7 +27,7 @@ public final class Chunk {
      * Chunk coordinates, multiply by {@link #CHUNK_SIZE} to get the world coordinates of this chunk's origin. */
     public final int x, y;
     /** Set by {@link #world}. Loaded chunk may interact with other chunks, non-loaded must not. */
-    public boolean loaded = false;
+    private boolean loaded = false;
     /** Blocks of this chunk in 1D array for performance. X changes fastest, then Y then Z. Does not contain any nulls.
      * @see #coord(int, int, int) */
     private final Block[] blocks = new Block[CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT];
@@ -50,6 +50,16 @@ public final class Chunk {
         this.x = x;
         this.y = y;
         Arrays.fill(blocks, Air.AIR);
+    }
+
+    public void setLoaded(boolean loaded){
+        if(loaded){
+            //Update occlusions
+            final BlockIterator iterator = (cX, cY, cZ, occlusion1, block) -> updateBlockAndNeighborOcclusion(cX, cY, cZ);
+            forEachStaticNonAirBlock(iterator);
+            forEachDynamicNonAirBlock(iterator);
+        }
+        this.loaded = loaded;
     }
 
     /** Maps in-chunk coordinates to unique int key, which is its index in {@link #blocks}.
@@ -113,6 +123,17 @@ public final class Chunk {
             }
         }
 
+
+        if(loaded) {
+            updateBlockAndNeighborOcclusion(x, y, z);
+
+            for (WorldObserver observer : world.observers()) {
+                observer.blockChanged(this, x, y, z, old, block);
+            }
+        }
+    }
+
+    private void updateBlockAndNeighborOcclusion(int x, int y, int z){
         //Update own occlusion mask
         updateOcclusion(x,y,z);
 
@@ -142,12 +163,6 @@ public final class Chunk {
         }
         if(z < CHUNK_HEIGHT-1){
             updateOcclusion(x, y, z+1);
-        }
-
-        if(loaded) {
-            for (WorldObserver observer : world.observers()) {
-                observer.blockChanged(this, x, y, z, old, block);
-            }
         }
     }
 
