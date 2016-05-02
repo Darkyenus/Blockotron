@@ -21,6 +21,8 @@ import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import darkyenus.blockotron.world.*;
+import darkyenus.blockotron.world.blocks.Air;
+
 import static darkyenus.blockotron.world.Dimensions.*;
 
 /**
@@ -181,25 +183,37 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             if(staticDirty) staticBatch.begin();
             dynamicBatch.begin();
 
-            chunk.forEachNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                if(block.isDynamic()){
-                    if(block.isTransparent()){
-                        dynamicBatch.beginTransparent(cX, cY, cZ);
-                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, dynamicBatch);
-                        dynamicBatch.endTransparent();
-                    } else {
-                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, dynamicBatch);
+            final Block[] blocks = chunk.blocks;
+            final byte[] occlusion = chunk.occlusion;
+
+            int nonAirRemaining = chunk.nonAirBlockCount;
+            for (int i = 0; i < blocks.length && nonAirRemaining > 0; i++) {
+                final Block block = blocks[i];
+                if (block != Air.AIR) {
+                    final int cX = i & 0xF;
+                    final int cY = (i >> 4) & 0xF;
+                    final int cZ = (i >> 8) & 0xFF;
+
+                    if(block.isDynamic()){
+                        if(block.isTransparent()){
+                            dynamicBatch.beginTransparent(cX, cY, cZ);
+                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], dynamicBatch);
+                            dynamicBatch.endTransparent();
+                        } else {
+                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], dynamicBatch);
+                        }
+                    } else if(staticDirty) {
+                        if(block.isTransparent()){
+                            staticBatch.beginTransparent(cX, cY, cZ);
+                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], staticBatch);
+                            staticBatch.endTransparent();
+                        } else {
+                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], staticBatch);
+                        }
                     }
-                } else if(staticDirty) {
-                    if(block.isTransparent()){
-                        staticBatch.beginTransparent(cX, cY, cZ);
-                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, staticBatch);
-                        staticBatch.endTransparent();
-                    } else {
-                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, staticBatch);
-                    }
+                    nonAirRemaining--;
                 }
-            });
+            }
 
             if(staticDirty) staticBatch.end();
             dynamicBatch.end();

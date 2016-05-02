@@ -26,12 +26,14 @@ public final class Chunk {
     private boolean loaded = false;
 
     /** Blocks of this chunk in 1D array for performance. X changes fastest, then Y then Z. Does not contain any nulls.
+     * <br/>WARNING: DIRECT USE EXPERT ONLY, DO NOT MODIFY
      * @see Dimensions#inChunkKey(int, int, int) */
-    private final Block[] blocks = new Block[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
+    public final Block[] blocks = new Block[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
     /** Indexing identical to of {@link #blocks}.
      * For each block, contains which Sides are visible.
-     * Byte holds flags from {@link Side} */
-    private final byte[] occlusion = new byte[blocks.length];
+     * Byte holds flags from {@link Side}
+     * <br/>WARNING: DIRECT USE EXPERT ONLY, DO NOT MODIFY */
+    public final byte[] occlusion = new byte[blocks.length];
 
     /** IDs of entities with {@link darkyenus.blockotron.world.components.Position} on this chunk */
     private final IntArray entities = new IntArray(false, 64);
@@ -40,7 +42,9 @@ public final class Chunk {
     private final IntIntMap blockEntities = new IntIntMap();
 
     //Iteration hints
-    private int nonAirMin = 0, nonAirMax = -1;
+    /** Amount of blocks in this chunk that are not air.
+     * <br/>WARNING: DIRECT USE EXPERT ONLY, DO NOT MODIFY */
+    public int nonAirBlockCount = 0;
 
     public Chunk(World world, int x, int y, int z) {
         this.world = world;
@@ -123,9 +127,10 @@ public final class Chunk {
 		}
 
         //Update iterator hints
-        if(block != Air.AIR) {
-            nonAirMin = Math.min(nonAirMin, coord);
-            nonAirMax = Math.max(nonAirMax, coord);
+        if(old == Air.AIR){
+            nonAirBlockCount++;
+        } else if(block == Air.AIR){
+            nonAirBlockCount--;
         }
 
         if(loaded) {
@@ -223,32 +228,15 @@ public final class Chunk {
     public void forEachNonAirBlock(BlockIterator iterator) {
         final Block[] blocks = this.blocks;
         final byte[] occlusion = this.occlusion;
-        int i = nonAirMin;
-        final int max = nonAirMax;
-        no_blocks:{
-            for (; i <= max; i++) {
-                final Block block = blocks[i];
-                if (block != Air.AIR) {
-                    iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
-                    nonAirMin = i;
-                    break no_blocks;
-                }
-            }
-            // We iterated whole array and didn't find single static block.
-            nonAirMin = 0;
-            nonAirMax = -1;
-            return;
-        }
-        int currentMax = i;
-        i++;//Advance so we don't iterate twice over the same block
-        for (; i <= max; i++) {
+
+        int nonAirRemaining = nonAirBlockCount;
+        for (int i = 0; i < blocks.length && nonAirRemaining > 0; i++) {
             final Block block = blocks[i];
             if (block != Air.AIR) {
                 iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
-                currentMax = i;
+                nonAirRemaining--;
             }
         }
-        nonAirMax = currentMax;
     }
 
     /** Register entity with this chunk */
