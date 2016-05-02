@@ -90,6 +90,8 @@ public class GameScreen extends Screen {
             final StringBuilder sb = new StringBuilder();
             sb.append("FPS: ").append(Gdx.graphics.getFramesPerSecond()).append('\n');
             sb.append("Chunks: ").append(renderer.debug_chunksRendered).append('/').append(renderer.debug_chunksConsidered).append('\n');
+            final Runtime runtime = Runtime.getRuntime();
+            sb.append("Memory: ").append((runtime.totalMemory() - runtime.freeMemory()) >> 10).append(" / ").append(runtime.totalMemory() >> 10).append(" kB\n");
             sb.append("X: ").append(renderer.camera.position.x).append('\n');
             sb.append("Y: ").append(renderer.camera.position.y).append('\n');
             sb.append("Z: ").append(renderer.camera.position.z).append('\n');
