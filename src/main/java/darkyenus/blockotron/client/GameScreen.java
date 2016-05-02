@@ -96,8 +96,8 @@ public class GameScreen extends Screen {
             sb.append("VY: ").append(playerKinematic.velY).append('\n');
             sb.append("VZ: ").append(playerKinematic.velZ).append('\n');
 
-            sb.append("Chunk X: ").append(World.chunkCoord(renderer.camera.position.x)).append(" ").append(World.inChunkCoordXY(renderer.camera.position.x)).append('\n');
-            sb.append("Chunk Y: ").append(World.chunkCoord(renderer.camera.position.y)).append(" ").append(World.inChunkCoordXY(renderer.camera.position.y)).append('\n');
+            sb.append("Chunk X: ").append(Dimensions.worldToChunk(renderer.camera.position.x)).append(" ").append(Dimensions.worldToInChunk(renderer.camera.position.x)).append('\n');
+            sb.append("Chunk Y: ").append(Dimensions.worldToChunk(renderer.camera.position.y)).append(" ").append(Dimensions.worldToInChunk(renderer.camera.position.y)).append('\n');
             sb.append("Dir X: ").append(renderer.camera.direction.x).append('\n');
             sb.append("Dir Y: ").append(renderer.camera.direction.y).append('\n');
             sb.append("Dir Z: ").append(renderer.camera.direction.z).append('\n');
@@ -110,11 +110,11 @@ public class GameScreen extends Screen {
                 sb.append("   Y: ").append(blockOnRay.getY()).append('\n');
                 sb.append("   Z: ").append(blockOnRay.getZ()).append('\n');
                 sb.append(" Side: ").append(blockOnRay.getSide()).append('\n');
-                final byte occlusionMask = world.getChunk(World.chunkCoord(blockOnRay.getX()), World.chunkCoord(blockOnRay.getY()))
-                        .getOcclusionMask(
-                                World.inChunkCoordXY(blockOnRay.getX()),
-                                World.inChunkCoordXY(blockOnRay.getY()),
-                                World.inChunkCoordZ(blockOnRay.getZ()));
+                final Chunk targetChunk = world.getChunk(Dimensions.worldToChunk(blockOnRay.getX()), Dimensions.worldToChunk(blockOnRay.getY()), Dimensions.worldToChunk(blockOnRay.getZ()));
+                final byte occlusionMask = targetChunk == null ? 0 : targetChunk.getOcclusionMask(
+                                Dimensions.worldToInChunk(blockOnRay.getX()),
+                                Dimensions.worldToInChunk(blockOnRay.getY()),
+                                Dimensions.worldToInChunk(blockOnRay.getZ()));
                 if(occlusionMask != 0){
                     sb.append(" Visible from: ");
                     for (Side side : Side.values()) {

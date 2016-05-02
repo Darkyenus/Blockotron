@@ -10,6 +10,7 @@ import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.blocks.Air;
 import darkyenus.blockotron.world.components.Position;
+import static darkyenus.blockotron.world.Dimensions.*;
 
 /**
  * Holds all data of single world, either directly or through {@link Chunk}s.
@@ -59,11 +60,9 @@ public final class World {
 
                     final Position position = positionMapper.get(entity);
 
-                    final int chunkX, chunkY;
-                    chunkX = World.chunkCoord(position.x);
-                    chunkY = World.chunkCoord(position.y);
+                    final Chunk chunk = getLoadedChunk(position.toChunkKey());
+                    if (chunk == null) continue;
 
-                    final Chunk chunk = getChunk(chunkX, chunkY);
                     if (add) chunk.addEntity(entity);
                     else chunk.removeEntity(entity);
                 }
@@ -73,17 +72,14 @@ public final class World {
         engine.getFamily(Family.with(Position.class)).addListener(chunkPositionMapper);
     }
 
-    /** Get unique long-key under which the chunk at given chunk coordinates is saved at {@link #chunks}. */
-    public static long chunkCoordKey(int x, int y){
-        return ((long)x << 32) | ((long)y & 0xFFFF_FFFFL);
-    }
-
-    /** Return chunk at given chunk-coordinates. Chunk is retrieved from ChunkProvider if not loaded. */
-    public Chunk getChunk(int x, int y){
-        final long key = chunkCoordKey(x, y);
+    /** Return chunk at given chunk-coordinates. Chunk is retrieved from ChunkProvider if not loaded.
+     * May return null if the chunk is out of boundaries. */
+    public Chunk getChunk(int x, int y, int z){
+        if(z < 0 || z >= CHUNK_LAYERS) return null;
+        final long key = Dimensions.chunkKey(x, y, z);
         final Chunk existing = chunks.get(key);
-        if(existing == null){
-            final Chunk newChunk = chunkProvider.getChunk(x, y);
+        if(existing == null) {
+            final Chunk newChunk = chunkProvider.getChunk(x, y, z);
             chunks.put(key, newChunk);
             newChunk.setLoaded(true);
             for (WorldObserver observer : observers()) {
@@ -95,99 +91,47 @@ public final class World {
         }
     }
 
-    /** Return loaded chunk at given chunk-coordinates or null of not loaded. */
-    public Chunk getLoadedChunk(int x, int y){
-        return chunks.get(chunkCoordKey(x, y));
+    /** Return loaded chunk at given VALID chunk-coordinates or null of not loaded. */
+    public Chunk getLoadedChunk(int x, int y, int z){
+        if(z < 0 || z >= CHUNK_LAYERS) return null;
+        return chunks.get(Dimensions.chunkKey(x, y, z));
     }
 
-    public Iterable<Chunk> getLoadedChunks(){
-        return chunks.values();
-    }
-
-    /** Translate a world x or y coordinate into a chunk-coordinate.
-     * @see Chunk#x */
-    public static int chunkCoord(double xy){
-        double c = xy / Chunk.CHUNK_SIZE;
-        return (int)Math.floor(c);
-    }
-
-    /** Translate a world x or y coordinate into a chunk-coordinate.
-     * @see Chunk#x */
-    public static int chunkCoord(int xy){
-        return Math.floorDiv(xy, Chunk.CHUNK_SIZE);
-    }
-
-    /** Translate a world x or y coordinate into an in-chunk coordinate of its respective chunk.
-     * Returned coordinate is always valid.
-     * @see #inChunkCoordZ(double) */
-    public static int inChunkCoordXY(double xy){
-        double c = xy % Chunk.CHUNK_SIZE;
-        if(c < 0) c += Chunk.CHUNK_SIZE;
-        return (int)c;
-    }
-
-    /** Translate a world x or y coordinate into an in-chunk coordinate of its respective chunk.
-     * Returned coordinate is always valid.
-     * @see #inChunkCoordZ(double) */
-    public static int inChunkCoordXY(int xy){
-        return Math.floorMod(xy, Chunk.CHUNK_SIZE);
-    }
-
-    /** Translate a world z coordinate into an in-chunk coordinate of its respective chunk.
-     * Returned coordinate may not be valid if z is < 0 or >= {@link Chunk#CHUNK_HEIGHT}.
-     * @see #inChunkCoordXY(double) */
-    public static int inChunkCoordZ(double z){
-        return (int)z;
-    }
-
-    /** @return block on given world coordinates, retrieves the chunk if not loaded */
-    public Block getBlock(double x, double y, double z) {
-        final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
-        final int cx = inChunkCoordXY(x);
-        final int cy = inChunkCoordXY(y);
-        final int cz = inChunkCoordZ(z);
-        if(cz < 0 || cz >= Chunk.CHUNK_HEIGHT) return null;
-        return chunk.getBlock(cx, cy, cz);
+    public Chunk getLoadedChunk(long chunkKey) {
+        return chunks.get(chunkKey);
     }
 
     /** @return block on given world coordinates, retrieves the chunk if not loaded */
     public Block getBlock(int x, int y, int z) {
-        final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
-        final int cx = inChunkCoordXY(x);
-        final int cy = inChunkCoordXY(y);
-        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return Air.AIR;
-        return chunk.getBlock(cx, cy, z);
+        final Chunk chunk = getChunk(worldToChunk(x), worldToChunk(y), worldToChunk(z));
+        if(chunk == null) return Air.AIR;
+        final int cx = worldToInChunk(x);
+        final int cy = worldToInChunk(y);
+        final int cz = worldToInChunk(z);
+        if((cz & CHUNK_SIZE_MASK) != cz) return Air.AIR;
+        return chunk.getLocalBlock(cx, cy, cz);
     }
 
-    /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
-    public Block getLoadedBlock(double x, double y, double z){
-        final int cz = inChunkCoordZ(z);
-        if(cz < 0 || cz >= Chunk.CHUNK_HEIGHT) return null;
-        final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
-        if(loadedChunk == null) return null;
-        final int cx = inChunkCoordXY(x);
-        final int cy = inChunkCoordXY(y);
-        return loadedChunk.getBlock(cx, cy, cz);
-    }
-
-    /** @return block on given world coordinates, but only if it is already loaded, null otherwise. */
+    /** @return block on given world coordinates, but only if it is already loaded, Air otherwise. */
     public Block getLoadedBlock(int x, int y, int z){
-        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return null;
-        final Chunk loadedChunk = getLoadedChunk(chunkCoord(x), chunkCoord(y));
-        if(loadedChunk == null) return null;
-        final int cx = inChunkCoordXY(x);
-        final int cy = inChunkCoordXY(y);
-        return loadedChunk.getBlock(cx, cy, z);
+        final Chunk chunk = getLoadedChunk(worldToChunk(x), worldToChunk(y), worldToChunk(z));
+        if(chunk == null) return Air.AIR;
+        final int cx = worldToInChunk(x);
+        final int cy = worldToInChunk(y);
+        final int cz = worldToInChunk(z);
+        if((cz & CHUNK_SIZE_MASK) != cz) return Air.AIR;
+        return chunk.getLocalBlock(cx, cy, cz);
     }
 
     /** Set the block on given world coordinates to given block.
      * Does nothing if coordinates are invalid. */
     public void setBlock(int x, int y, int z, Block newBlock) {
-        final Chunk chunk = getChunk(chunkCoord(x), chunkCoord(y));
-        final int cx = inChunkCoordXY(x);
-        final int cy = inChunkCoordXY(y);
-        if(z < 0 || z >= Chunk.CHUNK_HEIGHT) return;
-        chunk.setBlock(cx, cy, z, newBlock);
+        final Chunk chunk = getChunk(worldToChunk(x), worldToChunk(y), worldToChunk(z));
+        final int cx = worldToInChunk(x);
+        final int cy = worldToInChunk(y);
+        final int cz = worldToInChunk(z);
+        if((cz & CHUNK_SIZE_MASK) != cz) return;
+        chunk.setLocalBlock(cx, cy, cz, newBlock);
     }
 
     /** Instance of return value of getBlockOnRay, for GC reasons. */

@@ -2,6 +2,7 @@ package darkyenus.blockotron.world.components;
 
 import com.badlogic.gdx.math.Vector3;
 import com.github.antag99.retinazer.Component;
+import darkyenus.blockotron.world.Dimensions;
 
 /**
  * World entity position.
@@ -29,6 +30,10 @@ public final class Position implements Component {
         this.y += y;
         this.z += z;
         return this;
+    }
+
+    public long toChunkKey(){
+        return Dimensions.worldToClampedChunkKey((int)Math.floor(x), (int)Math.floor(y), (int)Math.floor(z));
     }
 
     public Vector3 toVector(Vector3 v) {

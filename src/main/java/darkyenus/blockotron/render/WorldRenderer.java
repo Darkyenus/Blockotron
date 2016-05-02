@@ -20,10 +20,8 @@ import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import darkyenus.blockotron.world.Block;
-import darkyenus.blockotron.world.Chunk;
-import darkyenus.blockotron.world.World;
-import darkyenus.blockotron.world.WorldObserver;
+import darkyenus.blockotron.world.*;
+import static darkyenus.blockotron.world.Dimensions.*;
 
 /**
  * WorldObserver which takes care of rendering the {@link World} and in-game HUD.
@@ -87,54 +85,58 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
     @Override
     public void chunkLoaded(Chunk chunk) {
-        final long key = World.chunkCoordKey(chunk.x, chunk.y);
+        final long key = chunkKey(chunk.x, chunk.y, chunk.z);
         renderableChunks.put(key, new ChunkRenderable(chunk));
     }
 
     @Override
     public void blockChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, Block from, Block to) {
         if(!from.isDynamic() || !to.isDynamic()) {
-            renderableChunks.get(World.chunkCoordKey(chunk.x, chunk.y)).staticDirty = true;
+            renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).staticDirty = true;
         }
     }
 
     @Override
     public void blockOcclusionChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, byte from, byte to) {
-        if(!chunk.getBlock(inChunkX, inChunkY, inChunkZ).isDynamic()){
-            renderableChunks.get(World.chunkCoordKey(chunk.x, chunk.y)).staticDirty = true;
+        if(!chunk.getLocalBlock(inChunkX, inChunkY, inChunkZ).isDynamic()){
+            renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).staticDirty = true;
         }
     }
 
     @Override
     public void chunkUnloaded(Chunk chunk) {
-        renderableChunks.get(World.chunkCoordKey(chunk.x, chunk.y)).dispose();
+        renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).dispose();
     }
 
     @Override
     public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
-        int cameraChunkX = MathUtils.round(camera.position.x / Chunk.CHUNK_SIZE);
-        int cameraChunkY = MathUtils.round(camera.position.y / Chunk.CHUNK_SIZE);
-        int viewDistanceChunks = MathUtils.ceilPositive(camera.far / Chunk.CHUNK_SIZE);
+        int cameraChunkX = MathUtils.round(camera.position.x / CHUNK_SIZE);
+        int cameraChunkY = MathUtils.round(camera.position.y / CHUNK_SIZE);
+        int viewDistanceChunks = MathUtils.ceilPositive(camera.far / CHUNK_SIZE);
         final Frustum frustum = camera.frustum;
 
         int total = 0, passed = 0;
 
         for (int x = cameraChunkX - viewDistanceChunks; x < cameraChunkX + viewDistanceChunks; x++) {
             for (int y = cameraChunkY - viewDistanceChunks; y < cameraChunkY + viewDistanceChunks; y++) {
-                total++;
-                final long key = World.chunkCoordKey(x, y);
-                ChunkRenderable chunk = renderableChunks.get(key);
-                if(chunk == null){
-                    //continue;
-                    world.getChunk(x, y);
-                    chunk = renderableChunks.get(key);
-                    if(chunk == null)continue;
-                }
-                if(!frustum.boundsInFrustum(chunk.boundingBox)) {
-                    continue;
-                }
+                for (int z = cameraChunkY - viewDistanceChunks; z < cameraChunkY + viewDistanceChunks; z++) {
+                    total++;
+                    final long key = chunkKey(x, y, z);
+                    ChunkRenderable chunk = renderableChunks.get(key);
+                    if (chunk == null) {
+                        //continue;
+                        world.getChunk(x, y, z);
+                        chunk = renderableChunks.get(key);
+                        if (chunk == null) continue;
+                    }
 
-                chunk.getRenderables(renderables, pool);
+                    if (!frustum.boundsInFrustum(chunk.boundingBox)) {
+                        continue;
+                    }
+
+                    passed++;
+                    chunk.getRenderables(renderables, pool);
+                }
             }
         }
 
@@ -153,13 +155,13 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
         private ChunkRenderable(Chunk chunk) {
             this.chunk = chunk;
-            boundingBox.min.set(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
-            boundingBox.max.set(boundingBox.min).add(Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_HEIGHT);
+            boundingBox.min.set(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
+            boundingBox.max.set(boundingBox.min).add(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 
             staticBatch = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 10);
             dynamicBatch = new RectangleMeshBatch(false, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 8);
-            staticBatch.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
-            dynamicBatch.setWorldTranslation(chunk.x * Chunk.CHUNK_SIZE, chunk.y * Chunk.CHUNK_SIZE, 0);
+            staticBatch.setWorldTranslation(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
+            dynamicBatch.setWorldTranslation(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
         }
 
         private void dispose() {
@@ -167,51 +169,46 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             dynamicBatch.dispose();
         }
 
-        private void rebuildStaticMesh(){
-            final World world = chunk.world;
-            final int worldX = chunk.x * Chunk.CHUNK_SIZE;
-            final int worldY = chunk.y * Chunk.CHUNK_SIZE;
-
-            final RectangleMeshBatch batch = this.staticBatch;
-            batch.begin();
-            chunk.forEachStaticNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                if(block.isTransparent()){
-                    batch.beginTransparent(cX, cY, cZ);
-                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
-                    batch.endTransparent();
-                } else {
-                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
-                }
-            });
-            batch.end();
-        }
-
-        private void rebuildDynamicMesh(){
-            final World world = chunk.world;
-            final int worldX = chunk.x * Chunk.CHUNK_SIZE;
-            final int worldY = chunk.y * Chunk.CHUNK_SIZE;
-
-            final RectangleMeshBatch batch = this.dynamicBatch;
-            batch.begin();
-            chunk.forEachDynamicNonAirBlock((cX, cY, cZ, occlusion, block) -> {
-                if(block.isTransparent()){
-                    batch.beginTransparent(cX, cY, cZ);
-                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
-                    batch.endTransparent();
-                } else {
-                    block.render(world, worldX + cX, worldY + cY, cZ, cX, cY, cZ, occlusion, batch);
-                }
-            });
-            batch.end();
-        }
-
         @Override
         public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
+            final boolean staticDirty = this.staticDirty;
             if(staticDirty){
-                rebuildStaticMesh();
-                staticDirty = false;
+                this.staticDirty = false;
             }
-            rebuildDynamicMesh();
+
+            final World world = chunk.world;
+            final int worldX = chunk.x << CHUNK_SIZE_SHIFT;
+            final int worldY = chunk.y << CHUNK_SIZE_SHIFT;
+            final int worldZ = chunk.z << CHUNK_SIZE_SHIFT;
+
+            final RectangleMeshBatch staticBatch = this.staticBatch;
+            final RectangleMeshBatch dynamicBatch = this.dynamicBatch;
+
+            if(staticDirty) staticBatch.begin();
+            dynamicBatch.begin();
+
+            chunk.forEachNonAirBlock((cX, cY, cZ, occlusion, block) -> {
+                if(block.isDynamic()){
+                    if(block.isTransparent()){
+                        dynamicBatch.beginTransparent(cX, cY, cZ);
+                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, dynamicBatch);
+                        dynamicBatch.endTransparent();
+                    } else {
+                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, dynamicBatch);
+                    }
+                } else if(staticDirty) {
+                    if(block.isTransparent()){
+                        staticBatch.beginTransparent(cX, cY, cZ);
+                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, staticBatch);
+                        staticBatch.endTransparent();
+                    } else {
+                        block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion, staticBatch);
+                    }
+                }
+            });
+
+            if(staticDirty) staticBatch.end();
+            dynamicBatch.end();
 
             staticBatch.getRenderables(renderables, pool);
             dynamicBatch.getRenderables(renderables, pool);
