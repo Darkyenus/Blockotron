@@ -74,12 +74,12 @@ public final class World {
 
     /** Return chunk at given chunk-coordinates. Chunk is retrieved from ChunkProvider if not loaded.
      * May return null if the chunk is out of boundaries. */
-    public Chunk getChunk(int x, int y, int z){
-        if(z < 0 || z >= CHUNK_LAYERS) return null;
-        final long key = Dimensions.chunkKey(x, y, z);
+    public Chunk loadChunk(int chunkX, int chunkY, int chunkZ){
+        if(chunkZ < 0 || chunkZ >= CHUNK_LAYERS) return null;
+        final long key = Dimensions.chunkKey(chunkX, chunkY, chunkZ);
         final Chunk existing = chunks.get(key);
         if(existing == null) {
-            final Chunk newChunk = chunkProvider.getChunk(x, y, z);
+            final Chunk newChunk = chunkProvider.borrowChunk(chunkX, chunkY, chunkZ);
             chunks.put(key, newChunk);
             newChunk.setLoaded(true);
             for (WorldObserver observer : observers()) {
@@ -91,25 +91,27 @@ public final class World {
         }
     }
 
+    public void unloadChunk (int chunkX, int chunkY, int chunkZ) {
+        if(chunkZ < 0 || chunkZ >= CHUNK_LAYERS) return;
+        final long key = Dimensions.chunkKey(chunkX, chunkY, chunkZ);
+        final Chunk loaded = chunks.remove(key);
+        if (loaded != null) {
+            for (WorldObserver observer : observers()) {
+                observer.chunkUnloaded(loaded);
+            }
+            loaded.setLoaded(false);
+            chunkProvider.returnChunk(loaded);
+        }
+    }
+
     /** Return loaded chunk at given VALID chunk-coordinates or null of not loaded. */
-    public Chunk getLoadedChunk(int x, int y, int z){
-        if(z < 0 || z >= CHUNK_LAYERS) return null;
-        return chunks.get(Dimensions.chunkKey(x, y, z));
+    public Chunk getLoadedChunk(int chunkX, int chunkY, int chunkZ){
+        if(chunkZ < 0 || chunkZ >= CHUNK_LAYERS) return null;
+        return chunks.get(Dimensions.chunkKey(chunkX, chunkY, chunkZ));
     }
 
     public Chunk getLoadedChunk(long chunkKey) {
         return chunks.get(chunkKey);
-    }
-
-    /** @return block on given world coordinates, retrieves the chunk if not loaded */
-    public Block getBlock(int x, int y, int z) {
-        final Chunk chunk = getChunk(worldToChunk(x), worldToChunk(y), worldToChunk(z));
-        if(chunk == null) return Air.AIR;
-        final int cx = worldToInChunk(x);
-        final int cy = worldToInChunk(y);
-        final int cz = worldToInChunk(z);
-        if((cz & CHUNK_SIZE_MASK) != cz) return Air.AIR;
-        return chunk.getLocalBlock(cx, cy, cz);
     }
 
     /** @return block on given world coordinates, but only if it is already loaded, Air otherwise. */
@@ -126,7 +128,8 @@ public final class World {
     /** Set the block on given world coordinates to given block.
      * Does nothing if coordinates are invalid. */
     public void setBlock(int x, int y, int z, Block newBlock) {
-        final Chunk chunk = getChunk(worldToChunk(x), worldToChunk(y), worldToChunk(z));
+        final Chunk chunk = loadChunk(worldToChunk(x), worldToChunk(y), worldToChunk(z));
+        if(chunk == null) return;
         final int cx = worldToInChunk(x);
         final int cy = worldToInChunk(y);
         final int cz = worldToInChunk(z);

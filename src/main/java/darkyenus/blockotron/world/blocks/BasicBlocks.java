@@ -22,8 +22,7 @@ public final class BasicBlocks {
                     worldZ += MathUtils.randomSign();
 
                     final Block maybeDirt = world.getLoadedBlock(worldX, worldY, worldZ);
-                    if(maybeDirt == null) return;
-                    if(maybeDirt == BasicBlocks.DIRT && world.getBlock(worldX, worldY, worldZ + 1).isTransparent()){
+                    if(maybeDirt == BasicBlocks.DIRT && world.getLoadedBlock(worldX, worldY, worldZ + 1).isTransparent()){
                         world.setBlock(worldX, worldY, worldZ, GRASS);
                     }
                 };

@@ -16,6 +16,7 @@ import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.*;
 import darkyenus.blockotron.world.components.*;
 import darkyenus.blockotron.world.debug.DebugWorldGenerator;
+import darkyenus.blockotron.world.systems.ChunkLoadingSystem;
 import darkyenus.blockotron.world.systems.KinematicSystem;
 import darkyenus.blockotron.world.systems.PlayerInputSystem;
 import darkyenus.blockotron.world.systems.RandomBlockBehaviorSystem;
@@ -43,6 +44,7 @@ public class GameScreen extends Screen {
                             .addSystem(new RandomBlockBehaviorSystem())
                             .addSystem(new PlayerInputSystem())
                             .addSystem(new KinematicSystem())
+                            .addSystem(new ChunkLoadingSystem(true))
                             .addWireResolver(new SelectionWireResolver(renderer)));
             world.addObserver(renderer);
 
@@ -54,6 +56,7 @@ public class GameScreen extends Screen {
             world.entityEngine().getMapper(Kinematic.class).create(playerEntity).setup(10f, true).setupHitbox(0.4f, 1.8f);
             world.entityEngine().getMapper(Orientation.class).create(playerEntity);
             world.entityEngine().getMapper(SelfMotionCapable.class).create(playerEntity).setup(45f, 6f);
+            world.entityEngine().getMapper(ChunkLoading.class).create(playerEntity).setup(true, 7);
         }
     }
 
@@ -110,7 +113,7 @@ public class GameScreen extends Screen {
                 sb.append("   Y: ").append(blockOnRay.getY()).append('\n');
                 sb.append("   Z: ").append(blockOnRay.getZ()).append('\n');
                 sb.append(" Side: ").append(blockOnRay.getSide()).append('\n');
-                final Chunk targetChunk = world.getChunk(Dimensions.worldToChunk(blockOnRay.getX()), Dimensions.worldToChunk(blockOnRay.getY()), Dimensions.worldToChunk(blockOnRay.getZ()));
+                final Chunk targetChunk = world.getLoadedChunk(Dimensions.worldToChunk(blockOnRay.getX()), Dimensions.worldToChunk(blockOnRay.getY()), Dimensions.worldToChunk(blockOnRay.getZ()));
                 final byte occlusionMask = targetChunk == null ? 0 : targetChunk.getOcclusionMask(
                                 Dimensions.worldToInChunk(blockOnRay.getX()),
                                 Dimensions.worldToInChunk(blockOnRay.getY()),

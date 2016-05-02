@@ -20,10 +20,15 @@ public class GeneratorChunkProvider implements ChunkProvider {
     }
 
     @Override
-    public Chunk getChunk(int x, int y, int z) {
+    public Chunk borrowChunk(int x, int y, int z) {
         final Chunk chunk = new Chunk(world, x, y, z);
         generator.generateChunk(chunk);
         return chunk;
+    }
+
+    @Override
+    public void returnChunk(Chunk chunk) {
+        //TODO
     }
 
     @Override

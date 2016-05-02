@@ -9,7 +9,9 @@ public interface ChunkProvider {
     void initialize(World world);
 
     /** Return chunk at given chunk-coordinates. Chunk may be empty, but never null. */
-    Chunk getChunk(int x, int y, int z);
+    Chunk borrowChunk(int x, int y, int z);
+
+    void returnChunk(Chunk chunk);
 
     /** Update this chunk provider. Previously loaded chunks may be modified here if necessary (new data from server). */
     void update(float delta);

@@ -34,6 +34,18 @@ public class Dimensions {
         return (chunkZ & 0xFFL) << 56 | (chunkY & 0xFFFF_FFFL) << 28 | chunkX & 0xFFFF_FFFL;
     }
 
+    public static int chunkKeyToX(long chunkKey){
+        return (int) (chunkKey & 0xFFFF_FFFL);
+    }
+
+    public static int chunkKeyToY(long chunkKey){
+        return (int) ((chunkKey >>> 28) & 0xFFFF_FFFL);
+    }
+
+    public static int chunkKeyToZ(long chunkKey){
+        return (int) ((chunkKey >>> 56) & 0xFFL);
+    }
+
     /** Does chunkKey but on world coordinates which are Z clamped */
     public static long worldToClampedChunkKey(int worldX, int worldY, int worldZ){
         return chunkKey(worldX >> CHUNK_SIZE_SHIFT, worldY >> CHUNK_SIZE_SHIFT, MathUtils.clamp(worldZ >> CHUNK_SIZE_SHIFT, 0, CHUNK_LAYERS));

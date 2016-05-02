@@ -123,14 +123,8 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
                     total++;
                     final long key = chunkKey(x, y, z);
                     ChunkRenderable chunk = renderableChunks.get(key);
-                    if (chunk == null) {
-                        //continue;
-                        world.getChunk(x, y, z);
-                        chunk = renderableChunks.get(key);
-                        if (chunk == null) continue;
-                    }
 
-                    if (!frustum.boundsInFrustum(chunk.boundingBox)) {
+                    if (chunk == null || !frustum.boundsInFrustum(chunk.boundingBox)) {
                         continue;
                     }
 
