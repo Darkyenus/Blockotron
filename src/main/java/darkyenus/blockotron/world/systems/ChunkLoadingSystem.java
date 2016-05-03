@@ -1,6 +1,8 @@
 package darkyenus.blockotron.world.systems;
 
 import com.badlogic.gdx.utils.IntArray;
+import com.badlogic.gdx.utils.IntMap;
+import com.badlogic.gdx.utils.LongArray;
 import com.badlogic.gdx.utils.LongMap;
 import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.world.Dimensions;
@@ -16,8 +18,16 @@ import darkyenus.blockotron.world.components.Position;
 public class ChunkLoadingSystem extends EntityProcessorSystem {
 
     private final boolean serverMode;
-    private final LongMap<Anchor> anchors = new LongMap<>();
+    /** key is entity */
+    private final IntMap<Anchor> anchors = new IntMap<>();
+    /** key is chunkColumnKey */
     private final LongMap<Integer> chunkUsageLevels = new LongMap<>();
+
+    /** Columns which are loaded, but not needed anymore and kept because they will probably be needed soon. */
+    private final LongArray inactiveChunks = new LongArray(true, 512 + 256);
+
+    private static final int INACTIVE_CHUNKS_THRESHOLD = 512;
+    private static final int INACTIVE_CHUNKS_KEEP = 128;
 
     @Wire
     private World world;
@@ -58,22 +68,20 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
                     final Position position = positionMapper.get(entity);
                     final BlockPosition blockPosition = blockPositionMapper.get(entity);
 
-                    final int x, y, z;
+                    final int x, y;
                     if(position != null){
                         x = (int)position.x;
                         y = (int)position.y;
-                        z = (int)position.z;
                     } else if (blockPosition != null) {
                         x = blockPosition.x;
                         y = blockPosition.y;
-                        z = blockPosition.z;
                     } else {
                         return;
                     }
 
                     final Anchor anchor = new Anchor();
                     anchors.put(entity, anchor);
-                    anchor.addTo(x, y, z, chunkLoading.radius);
+                    anchor.addTo(x, y, chunkLoading.radius);
                 }
             }
 
@@ -98,75 +106,94 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
     @Override
     protected void process(int entity, float delta) {
         final Position position = positionMapper.get(entity);
-        anchors.get(entity).moveTo((int)position.x, (int)position.y, (int)position.z);
+        anchors.get(entity).moveTo((int)position.x, (int)position.y);
     }
 
     private final class Anchor {
 
-        private int chunkX, chunkY, chunkZ;
+        private int chunkX, chunkY;
         private int radius;
 
         private void add(){
+            final LongMap<Integer> chunkUsageLevels = ChunkLoadingSystem.this.chunkUsageLevels;
+            final LongArray inactiveChunks = ChunkLoadingSystem.this.inactiveChunks;
+            final World world = ChunkLoadingSystem.this.world;
+
             final int chunkX = this.chunkX;
             final int chunkY = this.chunkY;
-            final int chunkZ = this.chunkZ;
             final int radius = this.radius;
 
             for (int x = chunkX - radius; x <= chunkX + radius; x++) {
                 for (int y = chunkY - radius; y <= chunkY + radius; y++) {
-                    for (int z = chunkZ - radius; z <= chunkZ + radius; z++) {
-                        if(z < 0 || z >= Dimensions.CHUNK_LAYERS)continue;
-                        final long key = Dimensions.chunkKey(x, y, z);
-                        final Integer level = chunkUsageLevels.get(key, 0);
-                        if(level == 0){
-                            world.loadChunk(x, y, z);
+                    final long key = Dimensions.chunkColumnKey(x, y);
+                    final Integer level = chunkUsageLevels.get(key, 0);
+                    if(level == 0){
+                        if (!inactiveChunks.removeValue(key)) {
+                            //Was not inactive, load
+                            for (int z = 0; z < Dimensions.CHUNK_LAYERS; z++) {
+                                world.loadChunk(x, y, z);
+                            }
                         }
-                        chunkUsageLevels.put(key, level + 1);
                     }
+                    chunkUsageLevels.put(key, level + 1);
                 }
             }
         }
 
         public void remove(){
+            final LongMap<Integer> chunkUsageLevels = ChunkLoadingSystem.this.chunkUsageLevels;
+            final LongArray inactiveChunks = ChunkLoadingSystem.this.inactiveChunks;
+            final World world = ChunkLoadingSystem.this.world;
+
             final int chunkX = this.chunkX;
             final int chunkY = this.chunkY;
-            final int chunkZ = this.chunkZ;
             final int radius = this.radius;
 
             for (int x = chunkX - radius; x <= chunkX + radius; x++) {
                 for (int y = chunkY - radius; y <= chunkY + radius; y++) {
-                    for (int z = chunkZ - radius; z <= chunkZ + radius; z++) {
-                        if(z < 0 || z >= Dimensions.CHUNK_LAYERS)continue;
-                        final long key = Dimensions.chunkKey(x, y, z);
-                        final Integer newLevel = chunkUsageLevels.get(key, 1) - 1;
-                        if(newLevel == 0){
-                            chunkUsageLevels.remove(key);
-                            world.unloadChunk(x, y, z);
-                        } else {
-                            chunkUsageLevels.put(key, newLevel);
-                        }
+                    final long key = Dimensions.chunkColumnKey(x, y);
+                    final Integer newLevel = chunkUsageLevels.get(key, 1) - 1;
+                    if(newLevel == 0){
+                        chunkUsageLevels.remove(key);
+                        inactiveChunks.add(key);
+                    } else {
+                        chunkUsageLevels.put(key, newLevel);
                     }
                 }
             }
+
+            if(inactiveChunks.size >= INACTIVE_CHUNKS_THRESHOLD){
+                final int toRemove = inactiveChunks.size - INACTIVE_CHUNKS_KEEP;
+                final long[] items = inactiveChunks.items;
+                for (int item = 0; item < toRemove; item++) {
+                    final long key = items[item];
+
+                    final int x = Dimensions.chunkKeyToX(key);
+                    final int y = Dimensions.chunkKeyToY(key);
+
+                    for (int z = 0; z < Dimensions.CHUNK_LAYERS; z++) {
+                        world.unloadChunk(x, y, z);
+                    }
+                }
+
+                inactiveChunks.removeRange(0, toRemove - 1);
+            }
         }
 
-        public void moveTo(int worldX, int worldY, int worldZ) {
+        public void moveTo(int worldX, int worldY) {
             final int newX = Dimensions.worldToChunk(worldX);
             final int newY = Dimensions.worldToChunk(worldY);
-            final int newZ = Dimensions.worldToChunk(worldZ);
-            if(newX != chunkX || newY != chunkY || newZ != chunkZ){
+            if(newX != chunkX || newY != chunkY){
                 remove();
                 this.chunkX = newX;
                 this.chunkY = newY;
-                this.chunkZ = newZ;
                 add();
             }
         }
 
-        public void addTo(int worldX, int worldY, int worldZ, int radius){
+        public void addTo(int worldX, int worldY, int radius){
             this.chunkX = Dimensions.worldToChunk(worldX);
             this.chunkY = Dimensions.worldToChunk(worldY);
-            this.chunkZ = Dimensions.worldToChunk(worldZ);
             this.radius = radius;
             add();
         }
