@@ -6,6 +6,7 @@ import darkyenus.blockotron.world.Block;
 import darkyenus.blockotron.world.Chunk;
 import darkyenus.blockotron.world.ChunkProvider;
 import darkyenus.blockotron.world.World;
+import darkyenus.blockotron.world.blocks.Air;
 
 import static darkyenus.blockotron.world.Dimensions.*;
 
@@ -155,8 +156,25 @@ public final class GeneratorChunkProvider implements ChunkProvider {
             }
         }
 
-        public int getTopNonAirBlockZ(int inChunkX, int inChunkZ){
-            return 30;//TODO
+        public Block getBlock(int inColumnX, int inColumnY, int inColumnZ){
+            final int chunkZ = inColumnZ >> CHUNK_SIZE_SHIFT;
+            final Chunk chunk = chunks[chunkZ];
+            if(chunk == null) return Air.AIR;
+            return chunk.getLocalBlock(inColumnX, inColumnY, inColumnZ & CHUNK_SIZE_MASK);
+        }
+
+        /** @return Z coordinate of first block that is not air when going from top on given coordinates.
+         * -1 if all blocks in that column are air. */
+        public int getTopNonAirBlockZ(int inChunkX, int inChunkY){
+            for (int chunkZ = CHUNK_LAYERS-1; chunkZ >= 0; chunkZ--) {
+                final Chunk chunk = chunks[chunkZ];
+                if(chunk == null || chunk.nonAirBlockCount == 0) continue;
+                for (int inChunkZ = CHUNK_SIZE-1; inChunkZ >= 0; inChunkZ--) {
+                    final Block block = chunk.getLocalBlock(inChunkX, inChunkY, inChunkZ);
+                    if(block != Air.AIR) return (chunkZ << CHUNK_SIZE_SHIFT) + inChunkZ;
+                }
+            }
+            return -1;
         }
     }
 

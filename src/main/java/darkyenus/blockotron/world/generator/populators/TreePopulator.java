@@ -1,6 +1,7 @@
 package darkyenus.blockotron.world.generator.populators;
 
 import com.badlogic.gdx.math.MathUtils;
+import darkyenus.blockotron.world.Block;
 import darkyenus.blockotron.world.Dimensions;
 import darkyenus.blockotron.world.blocks.BasicBlocks;
 import darkyenus.blockotron.world.generator.ChunkPopulator;
@@ -17,7 +18,10 @@ public class TreePopulator implements ChunkPopulator {
         for (int i = 0; i < amountOfTrees; i++) {
             final int x = MathUtils.random.nextInt(Dimensions.CHUNK_SIZE), y = MathUtils.random.nextInt(Dimensions.CHUNK_SIZE);
             final int z = column.getTopNonAirBlockZ(x, y);
-            spawnTree(column, x, y, z);
+            final Block block = column.getBlock(x, y, z);
+            if (block == BasicBlocks.GRASS) {
+                spawnTree(column, x, y, z + 1);
+            }
         }
     }
 

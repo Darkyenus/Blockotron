@@ -84,4 +84,9 @@ public abstract class Block {
 	 * @param batch to be used for drawing */
 	public abstract void render (World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion,
 		RectangleMeshBatch batch);
+
+	@Override
+	public String toString() {
+		return id;
+	}
 }
