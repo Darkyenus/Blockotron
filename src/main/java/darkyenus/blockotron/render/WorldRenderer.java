@@ -88,7 +88,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
     @Override
     public void chunkLoaded(Chunk chunk) {
         final long key = chunkKey(chunk.x, chunk.y, chunk.z);
-        renderableChunks.put(key, new ChunkRenderable(chunk));
+        renderableChunks.put(key, chunkRenderablePool.obtain().setup(chunk));
     }
 
     @Override
@@ -103,7 +103,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
     @Override
     public void chunkUnloaded(Chunk chunk) {
-        renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).dispose();
+        chunkRenderablePool.free(renderableChunks.remove(chunkKey(chunk.x, chunk.y, chunk.z)));
     }
 
     @Override
@@ -137,26 +137,28 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
         debug_chunksRendered = passed;
     }
 
-    /** Takes care of building chunk block meshes. */
+    /** Takes care of building chunk block meshes.
+     * POOLED! */
     private static class ChunkRenderable implements RenderableProvider {
 
-        private final Chunk chunk;
+        private Chunk chunk;
         private final BoundingBox boundingBox = new BoundingBox();
         private final RectangleMeshBatch blockBatch;
 
         private boolean dirty = true;
 
-        private ChunkRenderable(Chunk chunk) {
+        private ChunkRenderable() {
+            blockBatch = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 10);
+        }
+
+        private ChunkRenderable setup(Chunk chunk){
             this.chunk = chunk;
             boundingBox.min.set(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
             boundingBox.max.set(boundingBox.min).add(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 
-            blockBatch = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 10);
             blockBatch.setWorldTranslation(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
-        }
-
-        private void dispose() {
-            blockBatch.dispose();
+            this.dirty = true;
+            return this;
         }
 
         @Override
@@ -205,4 +207,16 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             blockBatch.getRenderables(renderables, pool);
         }
     }
+
+    private final Pool<ChunkRenderable> chunkRenderablePool = new Pool<ChunkRenderable>() {
+        @Override
+        protected ChunkRenderable newObject() {
+            return new ChunkRenderable();
+        }
+
+        @Override
+        protected void reset(ChunkRenderable object) {
+            object.chunk = null;//Prevent leak
+        }
+    };
 }

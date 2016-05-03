@@ -55,7 +55,6 @@ public final class Chunk {
     }
 
     void load(){
-        this.loaded = true;
         //Update occlusions
         for (int z = 0; z < CHUNK_SIZE; z++) {
             for (int y = 0; y < CHUNK_SIZE; y++) {
@@ -66,6 +65,7 @@ public final class Chunk {
         }
         //Deserialize entities
         //TODO
+        this.loaded = true;
     }
 
     void unload(){
@@ -264,6 +264,15 @@ public final class Chunk {
     /** Get the list of all block entities on this chunk. Do not modify, use for iteration only. */
     public IntIntMap blockEntities() {
         return blockEntities;
+    }
+
+    @Override
+    public String toString() {
+        return "Chunk{" +
+                "x=" + x +
+                ", y=" + y +
+                ", z=" + z +
+                '}';
     }
 
     public interface BlockIterator {
