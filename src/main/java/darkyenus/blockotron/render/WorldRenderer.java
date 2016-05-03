@@ -170,6 +170,8 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
                 final int worldZ = chunk.z << CHUNK_SIZE_SHIFT;
 
                 blockBatch.begin();
+                blockBatch.beginTransparent(0, 0, 0);
+                blockBatch.pauseTransparent();
 
                 final Block[] blocks = chunk.blocks;
                 final byte[] occlusion = chunk.occlusion;
@@ -182,10 +184,10 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
                         final int cY = (i >> 4) & 0xF;
                         final int cZ = (i >> 8) & 0xFF;
 
-                        if(block.isTransparent()){
-                            blockBatch.beginTransparent(cX, cY, cZ);
+                        if(block.isTransparent()) {
+                            blockBatch.resumeTransparent();
                             block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
-                            blockBatch.endTransparent();
+                            blockBatch.pauseTransparent();
                         } else {
                             block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
                         }
@@ -194,6 +196,8 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
                     }
                 }
 
+                blockBatch.resumeTransparent();
+                blockBatch.endTransparent();
                 blockBatch.end();
             }
 

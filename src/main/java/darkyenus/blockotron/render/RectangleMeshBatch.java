@@ -102,6 +102,19 @@ public class RectangleMeshBatch implements RenderableProvider {
         drawingTransparent = true;
     }
 
+    /** Allows to draw opaque blocks inside begin/endTransparent.
+     * Must be matched with resumeTransparent, before endTransparent! */
+    public void pauseTransparent(){
+        assert drawingTransparent;
+        drawingTransparent = false;
+    }
+
+    /** @see #pauseTransparent() */
+    public void resumeTransparent(){
+        assert !drawingTransparent;
+        drawingTransparent = true;
+    }
+
     public void endTransparent() {
         assert drawingTransparent;
         drawingTransparent = false;
