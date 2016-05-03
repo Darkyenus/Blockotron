@@ -54,7 +54,7 @@ public final class Chunk {
         Arrays.fill(blocks, Air.AIR);
     }
 
-    public void setLoaded(boolean loaded){
+    public void setLoaded(boolean loaded) {
         if(loaded){
             //Update occlusions
             for (int z = 0; z < CHUNK_SIZE; z++) {
@@ -133,7 +133,7 @@ public final class Chunk {
             nonAirBlockCount--;
         }
 
-        if(loaded) {
+        if (loaded) {
             //Update own occlusion mask
             updateLocalOcclusion(x,y,z);
 

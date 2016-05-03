@@ -24,6 +24,10 @@ public class Dimensions {
         return ((z & CHUNK_SIZE_MASK) << 8) | ((y & CHUNK_SIZE_MASK) << 4) | (x & CHUNK_SIZE_MASK);
     }
 
+    public static boolean validInChunkCoordinate(int xyz){
+        return (xyz & ~CHUNK_SIZE_MASK) == 0;
+    }
+
     /** Get unique long-key under which the chunk at given chunk coordinates is saved at {@link World#chunks}. */
     public static long chunkKey(int chunkX, int chunkY, int chunkZ) {
         // 8 bits for Z, 28 bits for Y and 28 bits for X, in that order (Z is most significant)
@@ -55,6 +59,11 @@ public class Dimensions {
         return (x1 >> CHUNK_SIZE_SHIFT) == (x2 >> CHUNK_SIZE_SHIFT)
                 && (y1 >> CHUNK_SIZE_SHIFT) == (y2 >> CHUNK_SIZE_SHIFT)
                 && (z1 >> CHUNK_SIZE_SHIFT) == (z2 >> CHUNK_SIZE_SHIFT);
+    }
+
+    /** Same as {@link #chunkKey(int, int, int)} but without the Z. */
+    public static long chunkColumnKey(int chunkX, int chunkY) {
+        return (chunkY & 0xFFFF_FFFL) << 28 | chunkX & 0xFFFF_FFFL;
     }
 
     /** Translate a world x, y or z coordinate into a chunk-coordinate.
