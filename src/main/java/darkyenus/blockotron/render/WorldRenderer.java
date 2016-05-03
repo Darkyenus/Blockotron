@@ -93,16 +93,12 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
     @Override
     public void blockChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, Block from, Block to) {
-        if(!from.isDynamic() || !to.isDynamic()) {
-            renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).staticDirty = true;
-        }
+        renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).dirty = true;
     }
 
     @Override
     public void blockOcclusionChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, byte from, byte to) {
-        if(!chunk.getLocalBlock(inChunkX, inChunkY, inChunkZ).isDynamic()){
-            renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).staticDirty = true;
-        }
+        renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).dirty = true;
     }
 
     @Override
@@ -145,81 +141,63 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
         private final Chunk chunk;
         private final BoundingBox boundingBox = new BoundingBox();
-        private final RectangleMeshBatch staticBatch, dynamicBatch;
+        private final RectangleMeshBatch blockBatch;
 
-        private boolean staticDirty = true;
+        private boolean dirty = true;
 
         private ChunkRenderable(Chunk chunk) {
             this.chunk = chunk;
             boundingBox.min.set(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
             boundingBox.max.set(boundingBox.min).add(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 
-            staticBatch = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 10);
-            dynamicBatch = new RectangleMeshBatch(false, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 8);
-            staticBatch.setWorldTranslation(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
-            dynamicBatch.setWorldTranslation(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
+            blockBatch = new RectangleMeshBatch(true, BlockFaces.opaqueMaterial, BlockFaces.transparentMaterial, 1 << 10);
+            blockBatch.setWorldTranslation(chunk.x << CHUNK_SIZE_SHIFT, chunk.y << CHUNK_SIZE_SHIFT, chunk.z << CHUNK_SIZE_SHIFT);
         }
 
         private void dispose() {
-            staticBatch.dispose();
-            dynamicBatch.dispose();
+            blockBatch.dispose();
         }
 
         @Override
         public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
-            final boolean staticDirty = this.staticDirty;
-            if(staticDirty){
-                this.staticDirty = false;
-            }
+            final RectangleMeshBatch blockBatch = this.blockBatch;
+            if(dirty){
+                this.dirty = false;
 
-            final World world = chunk.world;
-            final int worldX = chunk.x << CHUNK_SIZE_SHIFT;
-            final int worldY = chunk.y << CHUNK_SIZE_SHIFT;
-            final int worldZ = chunk.z << CHUNK_SIZE_SHIFT;
+                final World world = chunk.world;
+                final int worldX = chunk.x << CHUNK_SIZE_SHIFT;
+                final int worldY = chunk.y << CHUNK_SIZE_SHIFT;
+                final int worldZ = chunk.z << CHUNK_SIZE_SHIFT;
 
-            final RectangleMeshBatch staticBatch = this.staticBatch;
-            final RectangleMeshBatch dynamicBatch = this.dynamicBatch;
+                blockBatch.begin();
 
-            if(staticDirty) staticBatch.begin();
-            dynamicBatch.begin();
+                final Block[] blocks = chunk.blocks;
+                final byte[] occlusion = chunk.occlusion;
 
-            final Block[] blocks = chunk.blocks;
-            final byte[] occlusion = chunk.occlusion;
+                int nonAirRemaining = chunk.nonAirBlockCount;
+                for (int i = 0; i < blocks.length && nonAirRemaining > 0; i++) {
+                    final Block block = blocks[i];
+                    if (block != Air.AIR) {
+                        final int cX = i & 0xF;
+                        final int cY = (i >> 4) & 0xF;
+                        final int cZ = (i >> 8) & 0xFF;
 
-            int nonAirRemaining = chunk.nonAirBlockCount;
-            for (int i = 0; i < blocks.length && nonAirRemaining > 0; i++) {
-                final Block block = blocks[i];
-                if (block != Air.AIR) {
-                    final int cX = i & 0xF;
-                    final int cY = (i >> 4) & 0xF;
-                    final int cZ = (i >> 8) & 0xFF;
-
-                    if(block.isDynamic()){
                         if(block.isTransparent()){
-                            dynamicBatch.beginTransparent(cX, cY, cZ);
-                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], dynamicBatch);
-                            dynamicBatch.endTransparent();
+                            blockBatch.beginTransparent(cX, cY, cZ);
+                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
+                            blockBatch.endTransparent();
                         } else {
-                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], dynamicBatch);
+                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
                         }
-                    } else if(staticDirty) {
-                        if(block.isTransparent()){
-                            staticBatch.beginTransparent(cX, cY, cZ);
-                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], staticBatch);
-                            staticBatch.endTransparent();
-                        } else {
-                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], staticBatch);
-                        }
+
+                        nonAirRemaining--;
                     }
-                    nonAirRemaining--;
                 }
+
+                blockBatch.end();
             }
 
-            if(staticDirty) staticBatch.end();
-            dynamicBatch.end();
-
-            staticBatch.getRenderables(renderables, pool);
-            dynamicBatch.getRenderables(renderables, pool);
+            blockBatch.getRenderables(renderables, pool);
         }
     }
 }

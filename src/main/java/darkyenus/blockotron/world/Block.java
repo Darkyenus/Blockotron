@@ -13,8 +13,6 @@ public abstract class Block {
 	public static final byte TRANSPARENT = 1;
 	/** Render: Does this completely obscure faces of neighbors? */
 	public static final byte OCCLUDING = 1 << 1;
-	/** Render: Does need to be rendered each frame? (Is it animated?) (static blocks are buffered) */
-	public static final byte DYNAMIC = 1 << 2;
 	/** Do entities collide with this block or is it walk-through? */
 	public static final byte COLLIDABLE = 1 << 3;
 	/** Can the player replace this block by placing block on this block? (For example for "tall grass" on which player most
@@ -30,8 +28,7 @@ public abstract class Block {
 
 	/** Contains bit flags with characteristics of this block.
 	 * @see #TRANSPARENT
-	 * @see #OCCLUDING
-	 * @see #DYNAMIC */
+	 * @see #OCCLUDING */
 	public final byte flags;
 
 	/** Non-null collision bounding block of this block. */
@@ -57,11 +54,6 @@ public abstract class Block {
 	/** @see #OCCLUDING */
 	public final boolean isOccluding () {
 		return (flags & OCCLUDING) != 0;
-	}
-
-	/** @see #DYNAMIC */
-	public final boolean isDynamic () {
-		return (flags & DYNAMIC) != 0;
 	}
 
 	/** @see #COLLIDABLE */
