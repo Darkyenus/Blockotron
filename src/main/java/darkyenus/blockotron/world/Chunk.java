@@ -54,18 +54,24 @@ public final class Chunk {
         Arrays.fill(blocks, Air.AIR);
     }
 
-    public void setLoaded(boolean loaded) {
-        if(loaded){
-            //Update occlusions
-            for (int z = 0; z < CHUNK_SIZE; z++) {
-                for (int y = 0; y < CHUNK_SIZE; y++) {
-                    for (int x = 0; x < CHUNK_SIZE; x++) {
-                        updateOcclusion(x, y, z);
-                    }
+    void load(){
+        this.loaded = true;
+        //Update occlusions
+        for (int z = 0; z < CHUNK_SIZE; z++) {
+            for (int y = 0; y < CHUNK_SIZE; y++) {
+                for (int x = 0; x < CHUNK_SIZE; x++) {
+                    updateOcclusion(x, y, z);
                 }
             }
         }
-        this.loaded = loaded;
+        //Deserialize entities
+        //TODO
+    }
+
+    void unload(){
+        this.loaded = false;
+        //Serialize entities
+        //TODO
     }
 
     /** Get block inside this chunk, using in-chunk coordinates.
@@ -127,9 +133,9 @@ public final class Chunk {
 		}
 
         //Update iterator hints
-        if(old == Air.AIR){
+        if(old == Air.AIR) {
             nonAirBlockCount++;
-        } else if(block == Air.AIR){
+        } else if(block == Air.AIR) {
             nonAirBlockCount--;
         }
 

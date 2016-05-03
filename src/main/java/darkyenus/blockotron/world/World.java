@@ -81,7 +81,7 @@ public final class World {
         if(existing == null) {
             final Chunk newChunk = chunkProvider.borrowChunk(chunkX, chunkY, chunkZ);
             chunks.put(key, newChunk);
-            newChunk.setLoaded(true);
+            newChunk.load();
             for (WorldObserver observer : observers()) {
                 observer.chunkLoaded(newChunk);
             }
@@ -99,7 +99,7 @@ public final class World {
             for (WorldObserver observer : observers()) {
                 observer.chunkUnloaded(loaded);
             }
-            loaded.setLoaded(false);
+            loaded.unload();
             chunkProvider.returnChunk(loaded);
         }
     }

@@ -58,7 +58,7 @@ public final class GeneratorChunkProvider implements ChunkProvider {
         return populatedColumn.borrowChunk(z);
     }
 
-    private void generateColumn(ChunkColumn column){
+    private void generateColumn(ChunkColumn column) {
         generator.generateColumn(column);
     }
 

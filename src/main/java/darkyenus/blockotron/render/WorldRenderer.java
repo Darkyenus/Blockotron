@@ -110,6 +110,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
     public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
         int cameraChunkX = MathUtils.round(camera.position.x / CHUNK_SIZE);
         int cameraChunkY = MathUtils.round(camera.position.y / CHUNK_SIZE);
+        int cameraChunkZ = MathUtils.round(camera.position.z / CHUNK_SIZE);
         int viewDistanceChunks = MathUtils.ceilPositive(camera.far / CHUNK_SIZE);
         final Frustum frustum = camera.frustum;
 
@@ -117,7 +118,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
         for (int x = cameraChunkX - viewDistanceChunks; x < cameraChunkX + viewDistanceChunks; x++) {
             for (int y = cameraChunkY - viewDistanceChunks; y < cameraChunkY + viewDistanceChunks; y++) {
-                for (int z = cameraChunkY - viewDistanceChunks; z < cameraChunkY + viewDistanceChunks; z++) {
+                for (int z = cameraChunkZ - viewDistanceChunks; z < cameraChunkZ + viewDistanceChunks; z++) {
                     total++;
                     final long key = chunkKey(x, y, z);
                     ChunkRenderable chunk = renderableChunks.get(key);

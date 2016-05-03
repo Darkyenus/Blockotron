@@ -138,8 +138,13 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
                     for (int z = chunkZ - radius; z <= chunkZ + radius; z++) {
                         if(z < 0 || z >= Dimensions.CHUNK_LAYERS)continue;
                         final long key = Dimensions.chunkKey(x, y, z);
-                        final Integer level = chunkUsageLevels.get(key, 1);
-                        chunkUsageLevels.put(key, level - 1);
+                        final Integer newLevel = chunkUsageLevels.get(key, 1) - 1;
+                        if(newLevel == 0){
+                            chunkUsageLevels.remove(key);
+                            world.unloadChunk(x, y, z);
+                        } else {
+                            chunkUsageLevels.put(key, newLevel);
+                        }
                     }
                 }
             }
