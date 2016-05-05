@@ -13,7 +13,7 @@ import darkyenus.blockotron.world.Dimensions;
  *
  * @see BlockPosition for block entities. Mutually exclusive.
  */
-public final class Position implements Component {
+public final class Position implements Component.Pooled {
     public double x;
     public double y;
     public float z;

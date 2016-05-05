@@ -14,7 +14,7 @@ import com.github.antag99.retinazer.Component;
  *
  * @see Position for normal entities. Mutually exclusive.
  */
-public final class BlockPosition implements Component {
+public final class BlockPosition implements Component.Pooled {
     /** World block coordinates of this entity.
      * DO NOT CHANGE MANUALLY, ONLY THROUGH METHODS PROVIDED BY {@link darkyenus.blockotron.world.World}! */
     public int x, y, z;

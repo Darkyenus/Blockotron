@@ -7,7 +7,7 @@ import darkyenus.blockotron.utils.BoundingBox;
  * Encodes velocity of the entity.
  * Only for entities with Position.
  */
-public final class Kinematic implements Component {
+public final class Kinematic implements Component.Pooled {
 
     /** Current velocity */
     public float velX, velY, velZ;

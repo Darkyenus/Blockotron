@@ -1,12 +1,11 @@
 package darkyenus.blockotron.world.components;
 
 import com.github.antag99.retinazer.Component;
-import darkyenus.blockotron.world.Dimensions;
 
 /**
  * Component of entities which require world to be loaded around them.
  */
-public final class ChunkLoading implements Component {
+public final class ChunkLoading implements Component.Pooled {
     /** True = Chunks must be loaded because world on this machine is rendered around this entity.
      * False = Chunk must be loaded for processing only. */
     public boolean rendering;

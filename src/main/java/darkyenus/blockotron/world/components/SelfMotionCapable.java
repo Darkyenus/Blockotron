@@ -5,7 +5,7 @@ import com.github.antag99.retinazer.Component;
 /**
  * Collection of motion attributes for entities which can move by themselves.
  */
-public class SelfMotionCapable implements Component {
+public class SelfMotionCapable implements Component.Pooled {
     /** Kinematic acceleration of the entity */
     public float speed;
     /** Velocity of jump */

@@ -8,7 +8,7 @@ import darkyenus.blockotron.world.Side;
 /**
  *
  */
-public final class Orientation implements Component {
+public final class Orientation implements Component.Pooled {
 
     /** Looking north/south/east/west?
      * In degrees, 0-360. 0 = North */

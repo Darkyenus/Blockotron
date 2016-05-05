@@ -6,7 +6,7 @@ import darkyenus.blockotron.world.World;
 /**
  *
  */
-public final class RandomBlockBehavior implements Component {
+public final class RandomBlockBehavior implements Component.Pooled {
 
     public float halfLife = Float.MAX_VALUE;
     public Behavior behavior;
