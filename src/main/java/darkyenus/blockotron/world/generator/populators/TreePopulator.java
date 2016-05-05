@@ -30,12 +30,10 @@ public class TreePopulator implements ChunkPopulator {
         for (int oX = -2; oX <= 2; oX++) {
             for (int oY = -2; oY <= 2; oY++) {
                 for (int oZ = trunkHeight-3; oZ < trunkHeight + 2; oZ++) {
-                    column.setBlock(x + oX, y + oY, z + oZ, BasicBlocks.LEAVES);
+                    column.setBlockIfAir(x + oX, y + oY, z + oZ, BasicBlocks.LEAVES);
                 }
             }
         }
-        for (int i = 0; i < trunkHeight; i++) {
-            column.setBlock(x, y, z+i, BasicBlocks.WOOD_LOG);
-        }
+        column.setBlockColumn(x,y,z, trunkHeight, BasicBlocks.WOOD_LOG);
     }
 }

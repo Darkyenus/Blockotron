@@ -128,6 +128,31 @@ public final class GeneratorChunkProvider implements ChunkProvider {
             }
         }
 
+        public void setBlockIfAir(int inChunkX, int inChunkY, int inColumnZ, Block block){
+            final int inChunkZ = inColumnZ & CHUNK_SIZE_MASK;
+            final int chunkZ = inColumnZ >> CHUNK_SIZE_SHIFT;
+
+            if(chunkZ < 0 || chunkZ >= CHUNK_LAYERS) return;
+
+            final Chunk chunk;
+
+            if(validInChunkCoordinate(inChunkX) && validInChunkCoordinate(inChunkY)) {
+                chunk = getChunk(chunkZ);
+            } else if(populated) {
+                chunk = getGeneratedColumn(chunkX + ((inChunkX & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT), chunkY + ((inChunkY & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT))
+                        .getChunk(chunkZ);
+                inChunkX &= CHUNK_SIZE_MASK;
+                inChunkY &= CHUNK_SIZE_MASK;
+            } else {
+                throw new IllegalArgumentException("Generator is not permitted to modify chunks outside of its column");
+            }
+
+            final Block presentBlock = chunk.getLocalBlock(inChunkX, inChunkY, inChunkZ);
+            if(presentBlock == Air.AIR){
+                chunk.setLocalBlock(inChunkX, inChunkY, inChunkZ, block);
+            }
+        }
+
         public void setBlockColumn(int inChunkX, int inChunkY, int inColumnZ, int height, Block block) {
             final int maxColumnZ = inColumnZ + Math.min(height, CHUNK_LAYERS << CHUNK_SIZE_SHIFT - inColumnZ);
             if(maxColumnZ <= inColumnZ) return;
@@ -156,11 +181,21 @@ public final class GeneratorChunkProvider implements ChunkProvider {
             }
         }
 
-        public Block getBlock(int inColumnX, int inColumnY, int inColumnZ){
+        public Block getBlock(int inColumnX, int inColumnY, int inColumnZ) {
+            final int inChunkZ = inColumnZ & CHUNK_SIZE_MASK;
             final int chunkZ = inColumnZ >> CHUNK_SIZE_SHIFT;
-            final Chunk chunk = chunks[chunkZ];
-            if(chunk == null) return Air.AIR;
-            return chunk.getLocalBlock(inColumnX, inColumnY, inColumnZ & CHUNK_SIZE_MASK);
+
+            if(chunkZ < 0 || chunkZ >= CHUNK_LAYERS) return Air.AIR;
+
+            if(validInChunkCoordinate(inColumnX) && validInChunkCoordinate(inColumnY)) {
+                return getChunk(chunkZ).getLocalBlock(inColumnX, inColumnY, inChunkZ);
+            } else if(populated) {
+                return getGeneratedColumn(chunkX + ((inColumnX & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT), chunkY + ((inColumnY & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT))
+                        .getChunk(chunkZ)
+                        .getLocalBlock(inColumnX & CHUNK_SIZE_MASK, inColumnY & CHUNK_SIZE_MASK, inChunkZ);
+            } else {
+                throw new IllegalArgumentException("Generator is not permitted to read chunks outside of its column");
+            }
         }
 
         /** @return Z coordinate of first block that is not air when going from top on given coordinates.
