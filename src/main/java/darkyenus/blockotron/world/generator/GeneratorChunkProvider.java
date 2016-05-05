@@ -120,7 +120,7 @@ public final class GeneratorChunkProvider implements ChunkProvider {
             if(validInChunkCoordinate(inChunkX) && validInChunkCoordinate(inChunkY)) {
                 getChunk(chunkZ).setLocalBlock(inChunkX, inChunkY, inChunkZ, block);
             } else if(populated) {
-                getGeneratedColumn(chunkX + inChunkX >> CHUNK_SIZE_SHIFT, chunkY + inChunkY >> CHUNK_SIZE_SHIFT)
+                getGeneratedColumn(chunkX + ((inChunkX & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT), chunkY + ((inChunkY & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT))
                         .getChunk(chunkZ)
                         .setLocalBlock(inChunkX & CHUNK_SIZE_MASK, inChunkY & CHUNK_SIZE_MASK, inChunkZ, block);
             } else {
