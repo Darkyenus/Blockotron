@@ -22,8 +22,6 @@ public final class Chunk {
     /** Position of this chunk in the {@link #world}.
      * Chunk coordinates, multiply by {@link Dimensions#CHUNK_SIZE} to get the world coordinates of this chunk's origin. */
     public final int x, y, z;
-    /** Set by {@link #world}. Loaded chunk may interact with other chunks, non-loaded must not. */
-    private boolean loaded = false;
 
     /** Blocks of this chunk in 1D array for performance. X changes fastest, then Y then Z. Does not contain any nulls.
      * <br/>WARNING: DIRECT USE EXPERT ONLY, DO NOT MODIFY
@@ -40,6 +38,14 @@ public final class Chunk {
     /** IDs of entities with {@link darkyenus.blockotron.world.components.BlockPosition} on this chunk
      * with key being their {@link Dimensions#inChunkKey(int, int, int)} of in-chunk coords. */
     private final IntIntMap blockEntities = new IntIntMap();
+
+    /** Set by {@link #world}. Loaded chunk may interact with other chunks, non-loaded must not. */
+    private boolean loaded = false;
+
+    /** Storage of entities (block and normal) on this chunk when not loaded. */
+    private EntityStorage entityStorage = null;
+    /** Positions of block entities not yet spawned. */
+    private IntArray pendingBlockEntities = null;
 
     //Iteration hints
     /** Amount of blocks in this chunk that are not air.
@@ -63,15 +69,56 @@ public final class Chunk {
                 }
             }
         }
+
+        final World world = this.world;
+        final Engine entityEngine = world.entityEngine();
+
         //Deserialize entities
-        //TODO
+        if (entityStorage != null) {
+            entityStorage.loadEntities(entityEngine);
+            entityStorage = null;
+        }
+
+        //Add pending block entities
+        if(pendingBlockEntities != null){
+            final int[] items = pendingBlockEntities.items;
+            final int size = pendingBlockEntities.size;
+            final Block[] blocks = this.blocks;
+
+            for (int i = 0; i < size; i++) {
+                final int key = items[i];
+                final Block block = blocks[key];
+                if(block.hasEntity()){
+                    final int entity = entityEngine.createEntity();
+                    final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
+                    blockPosition.x = this.x << CHUNK_SIZE_SHIFT + inChunkKeyToX(key);
+                    blockPosition.y = this.y << CHUNK_SIZE_SHIFT + inChunkKeyToY(key);
+                    blockPosition.z = this.z << CHUNK_SIZE_SHIFT + inChunkKeyToZ(key);
+                    block.initializeEntity(world, entity);
+                }
+            }
+            pendingBlockEntities = null;
+        }
+
         this.loaded = true;
     }
 
     void unload(){
         this.loaded = false;
         //Serialize entities
-        //TODO
+        final IntArray entities = this.entities;
+        if(entities.size != 0 || blockEntities.size != 0){
+            final Engine engine = world.entityEngine();
+            final EntityStorage entityStorage = this.entityStorage = new EntityStorage();
+
+            //Standard entities
+            entityStorage.storeEntities(engine, entities.items, entities.size);
+            entities.clear();
+
+            //Block entities
+            entityStorage.storeEntities(engine, blockEntities.values());
+            blockEntities.clear();
+        }
     }
 
     /** Get block inside this chunk, using in-chunk coordinates.
@@ -116,20 +163,37 @@ public final class Chunk {
 		// Remove old block entity
 		final Engine entityEngine = world.entityEngine();
 		if (old.hasEntity()) {
-			final int removed = blockEntities.remove(coord, -1);
-			assert removed != -1 : "Block " + block + " didn't have associated entity even though it should have.";
-			entityEngine.destroyEntity(removed);
+            if(loaded){
+                final int removed = blockEntities.remove(coord, -1);
+                assert removed != -1 : "Block " + block + " didn't have associated entity even though it should have.";
+                entityEngine.destroyEntity(removed);
+            } else {
+                if (pendingBlockEntities == null || !pendingBlockEntities.removeValue(coord)) {
+                    if(entityStorage != null){
+                        entityStorage.removeBlockEntity(x, y, z);
+                    } else {
+                        assert false : "Failed to remove old block entity";
+                    }
+                }
+            }
 		}
 
 		// Add new block entity
 		if (block.hasEntity()) {
-			final int entity = entityEngine.createEntity();
-			final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
-			blockPosition.x = this.x * CHUNK_SIZE + x;
-			blockPosition.y = this.y * CHUNK_SIZE + y;
-			blockPosition.z = z;
-			block.initializeEntity(world, entity);
-			blockEntities.put(coord, entity);
+            if(loaded) {
+                final int entity = entityEngine.createEntity();
+                final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
+                blockPosition.x = this.x << CHUNK_SIZE_SHIFT + x;
+                blockPosition.y = this.y << CHUNK_SIZE_SHIFT + y;
+                blockPosition.z = this.z << CHUNK_SIZE_SHIFT + z;
+                block.initializeEntity(world, entity);
+                blockEntities.put(coord, entity);
+            } else {
+                if(pendingBlockEntities == null){
+                    pendingBlockEntities = new IntArray(false, 32);
+                }
+                pendingBlockEntities.add(coord);
+            }
 		}
 
         //Update iterator hints

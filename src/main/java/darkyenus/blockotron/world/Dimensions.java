@@ -24,6 +24,18 @@ public class Dimensions {
         return ((z & CHUNK_SIZE_MASK) << 8) | ((y & CHUNK_SIZE_MASK) << 4) | (x & CHUNK_SIZE_MASK);
     }
 
+    public static int inChunkKeyToX(int inChunkKey){
+        return (inChunkKey & CHUNK_SIZE_MASK);
+    }
+
+    public static int inChunkKeyToY(int inChunkKey){
+        return ((inChunkKey >> 4) & CHUNK_SIZE_MASK);
+    }
+
+    public static int inChunkKeyToZ(int inChunkKey){
+        return ((inChunkKey >> 8) & CHUNK_SIZE_MASK);
+    }
+
     public static boolean validInChunkCoordinate(int xyz){
         return (xyz & ~CHUNK_SIZE_MASK) == 0;
     }
