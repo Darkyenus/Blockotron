@@ -15,6 +15,11 @@ public final class BasicBlocks {
             .withTopTexture("grass_top").withSideTexture("grass_side").withBottomTexture("grass_bottom")){
         @Override
         public void randomTick(World world, int worldX, int worldY, int worldZ) {
+            if(!world.getLoadedBlock(worldX, worldY, worldZ + 1).isTransparent()){
+                world.setBlock(worldX, worldY, worldZ, DIRT);
+                return;
+            }
+
             worldX += MathUtils.randomSign();
             worldY += MathUtils.randomSign();
             worldZ += MathUtils.randomSign();
