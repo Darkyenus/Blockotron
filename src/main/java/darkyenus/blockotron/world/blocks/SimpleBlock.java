@@ -4,7 +4,6 @@ import darkyenus.blockotron.render.BlockFaceTexture;
 import darkyenus.blockotron.render.BlockFaces;
 import darkyenus.blockotron.render.RectangleMeshBatch;
 import darkyenus.blockotron.world.Block;
-import darkyenus.blockotron.world.EntityArchetype;
 import darkyenus.blockotron.world.World;
 
 /**
@@ -12,26 +11,23 @@ import darkyenus.blockotron.world.World;
  */
 public class SimpleBlock extends Block {
 
-    private final EntityArchetype entityArchetype;
     private final BlockFaceTexture top, sides, bottom;
 
     public SimpleBlock(SimpleBlockBuilder builder){
-        super(builder.id,builder.flags);
-        assert (builder.archetype != null) == hasEntity() : "Archetype flag mismatch";
-        this.entityArchetype = builder.archetype;
+        super(builder.id, builder.flags);
         this.top = builder.top;
         this.sides = builder.sides;
         this.bottom = builder.bottom;
     }
 
     @Override
-    public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {
+    public final void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {
         batch.createBlock(drawX, drawY, drawZ, occlusion, top, sides, bottom);
     }
 
     @Override
     protected void initializeEntity(World world, int entity) {
-        entityArchetype.populate(world, entity);
+        throw new UnsupportedOperationException("Subclasses with entities must override initializeEntity");
     }
 
     public static SimpleBlockBuilder create(String id){
@@ -45,7 +41,6 @@ public class SimpleBlock extends Block {
     public static final class SimpleBlockBuilder {
         private final String id;
         private int flags = 0;
-        private EntityArchetype archetype;
         private BlockFaceTexture top, sides, bottom;
 
         public SimpleBlockBuilder(String id) {
@@ -54,12 +49,6 @@ public class SimpleBlock extends Block {
 
         public SimpleBlockBuilder flags(int flags){
             this.flags |= flags;
-            return this;
-        }
-
-        public SimpleBlockBuilder withEntity(EntityArchetype archetype){
-            this.flags |= Block.HAS_ENTITY;
-            this.archetype = archetype;
             return this;
         }
 

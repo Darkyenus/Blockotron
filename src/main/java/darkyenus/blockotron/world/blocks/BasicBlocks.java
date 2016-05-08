@@ -10,6 +10,7 @@ import static darkyenus.blockotron.world.Block.*;
  * Collection of all basic blocks
  */
 public final class BasicBlocks {
+
     public static final Block GRASS = new SimpleBlock(SimpleBlock.create("grass", OCCLUDING | COLLIDABLE)
             .withTopTexture("grass_top").withSideTexture("grass_side").withBottomTexture("grass_bottom")){
         @Override
