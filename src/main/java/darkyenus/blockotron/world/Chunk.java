@@ -1,5 +1,6 @@
 package darkyenus.blockotron.world;
 
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.IntArray;
 import com.badlogic.gdx.utils.IntIntMap;
 import com.github.antag99.retinazer.Engine;
@@ -8,6 +9,7 @@ import darkyenus.blockotron.world.components.BlockPosition;
 import static darkyenus.blockotron.world.Dimensions.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Positioned cube in the {@link World}, holding blocks, entities and other world-grid related data, like lighting.
@@ -340,6 +342,20 @@ public final class Chunk {
                 ", y=" + y +
                 ", z=" + z +
                 '}';
+    }
+
+    protected void tick() {
+        final Random random = MathUtils.random;
+        int offX = this.x << CHUNK_SIZE_SHIFT;
+        int offY = this.y << CHUNK_SIZE_SHIFT;
+        int offZ = this.z << CHUNK_SIZE_SHIFT;
+
+        for (int i = 0; i < 3; i++) {
+            final int x = random.nextInt(CHUNK_SIZE);
+            final int y = random.nextInt(CHUNK_SIZE);
+            final int z = random.nextInt(CHUNK_SIZE);
+            blocks[inChunkKey(x,y,z)].randomTick(world, offX + x, offY + y, offZ + z);
+        }
     }
 
     public interface BlockIterator {

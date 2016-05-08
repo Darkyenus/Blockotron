@@ -24,10 +24,15 @@ public final class World {
 
     private final Engine entityEngine;
 
+    private float tickCountdown = 0f;
+
+    /** Time between logic ticks */
+    private static final float TICK_TIME = 1f/20f;
+
     /** Update delta will never be larger than this. This does mean that in extreme cases, game will slow down.
      * Main goal is not to slow down but to prevent huge amount of processing when game loop stops for a long amount of
      * time and systems can't catch up, for example while debugging. */
-    private static final float MAX_UPDATE_DELTA = 0.5f;
+    private static final float MAX_UPDATE_DELTA = 1f/5f;
 
     public World (ChunkProvider chunkProvider, EngineConfig engineConfig) {
         this.chunkProvider = chunkProvider;
@@ -179,7 +184,21 @@ public final class World {
         if(rawDelta > MAX_UPDATE_DELTA){
             rawDelta = MAX_UPDATE_DELTA;
         }
+
+        tickCountdown -= rawDelta;
+        while(tickCountdown < 0){
+            tickCountdown += TICK_TIME;
+            tick();
+        }
+
         entityEngine.update(rawDelta);
+    }
+
+    private void tick(){
+        //Block tick
+        for (Chunk chunk : chunks.values()) {
+            chunk.tick();
+        }
     }
 
     public Engine entityEngine(){

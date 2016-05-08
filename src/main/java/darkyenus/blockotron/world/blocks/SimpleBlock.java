@@ -10,18 +10,18 @@ import darkyenus.blockotron.world.World;
 /**
  * Base for most simple blocks.
  */
-public final class SimpleBlock extends Block {
+public class SimpleBlock extends Block {
 
     private final EntityArchetype entityArchetype;
     private final BlockFaceTexture top, sides, bottom;
 
-    public SimpleBlock(String id, int flags, EntityArchetype archetype, BlockFaceTexture top, BlockFaceTexture sides, BlockFaceTexture bottom) {
-        super(id, flags);
-        assert (archetype != null) == hasEntity() : "Archetype flag mismatch";
-        this.entityArchetype = archetype;
-        this.top = top;
-        this.sides = sides;
-        this.bottom = bottom;
+    public SimpleBlock(SimpleBlockBuilder builder){
+        super(builder.id,builder.flags);
+        assert (builder.archetype != null) == hasEntity() : "Archetype flag mismatch";
+        this.entityArchetype = builder.archetype;
+        this.top = builder.top;
+        this.sides = builder.sides;
+        this.bottom = builder.bottom;
     }
 
     @Override
@@ -84,7 +84,7 @@ public final class SimpleBlock extends Block {
         }
 
         public SimpleBlock build(){
-            return new SimpleBlock(id, flags, archetype, top, sides, bottom);
+            return new SimpleBlock(this);
         }
     }
 }

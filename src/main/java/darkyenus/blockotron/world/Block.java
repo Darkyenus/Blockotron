@@ -85,6 +85,8 @@ public abstract class Block {
 	public abstract void render (World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion,
 		RectangleMeshBatch batch);
 
+	public void randomTick(World world, int worldX, int worldY, int worldZ){}
+
 	@Override
 	public String toString() {
 		return id;

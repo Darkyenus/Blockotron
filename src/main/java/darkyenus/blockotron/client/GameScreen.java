@@ -21,7 +21,6 @@ import darkyenus.blockotron.world.generator.populators.TreePopulator;
 import darkyenus.blockotron.world.systems.ChunkLoadingSystem;
 import darkyenus.blockotron.world.systems.KinematicSystem;
 import darkyenus.blockotron.world.systems.PlayerInputSystem;
-import darkyenus.blockotron.world.systems.RandomBlockBehaviorSystem;
 
 /**
  *
@@ -43,7 +42,6 @@ public class GameScreen extends Screen {
             world = new World(
                     new GeneratorChunkProvider(new PerlinChunkGenerator(), new TreePopulator()),
                     new EngineConfig()
-                            .addSystem(new RandomBlockBehaviorSystem())
                             .addSystem(new PlayerInputSystem())
                             .addSystem(new KinematicSystem())
                             .addSystem(new ChunkLoadingSystem(true))
