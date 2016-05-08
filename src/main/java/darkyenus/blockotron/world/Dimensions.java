@@ -20,7 +20,7 @@ public class Dimensions {
      * Correct result is guaranteed only when coordinates are valid:
      * x and y >= 0 && < CHUNK_SIZE, z >= 0 && < CHUNK_HEIGHT */
     public static int inChunkKey(int x, int y, int z) {
-        //ZZZZ YYYY XXXX
+        //Bits: (20 Padding) ZZZZ YYYY XXXX
         return ((z & CHUNK_SIZE_MASK) << 8) | ((y & CHUNK_SIZE_MASK) << 4) | (x & CHUNK_SIZE_MASK);
     }
 
@@ -51,15 +51,15 @@ public class Dimensions {
     }
 
     public static int chunkKeyToX(long chunkKey){
-        return (int) (chunkKey & 0xFFFF_FFFL);
+        return (int) ((chunkKey << 36) >> 36);
     }
 
     public static int chunkKeyToY(long chunkKey){
-        return (int) ((chunkKey >>> 28) & 0xFFFF_FFFL);
+        return (int) ((chunkKey << 8) >> 36);
     }
 
     public static int chunkKeyToZ(long chunkKey){
-        return (int) ((chunkKey >>> 56) & 0xFFL);
+        return (int) (chunkKey >> 56);
     }
 
     /** Does chunkKey but on world coordinates which are Z clamped */

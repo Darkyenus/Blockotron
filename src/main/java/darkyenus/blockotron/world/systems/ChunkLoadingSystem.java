@@ -24,7 +24,7 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
     private final LongMap<Integer> chunkUsageLevels = new LongMap<>();
 
     /** Columns which are loaded, but not needed anymore and kept because they will probably be needed soon. */
-    private final LongArray inactiveChunks = new LongArray(true, 512 + 256);
+    private final LongArray inactiveChunks = new LongArray(true, INACTIVE_CHUNKS_THRESHOLD + 256);
 
     private static final int INACTIVE_CHUNKS_THRESHOLD = 512;
     private static final int INACTIVE_CHUNKS_KEEP = 128;

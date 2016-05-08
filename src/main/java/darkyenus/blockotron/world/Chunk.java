@@ -95,6 +95,7 @@ public final class Chunk {
                     blockPosition.y = this.y << CHUNK_SIZE_SHIFT + inChunkKeyToY(key);
                     blockPosition.z = this.z << CHUNK_SIZE_SHIFT + inChunkKeyToZ(key);
                     block.initializeEntity(world, entity);
+                    blockEntities.put(key, entity);
                 }
             }
             pendingBlockEntities = null;
@@ -107,6 +108,8 @@ public final class Chunk {
         this.loaded = false;
         //Serialize entities
         final IntArray entities = this.entities;
+        final IntIntMap blockEntities = this.blockEntities;
+
         if(entities.size != 0 || blockEntities.size != 0){
             final Engine engine = world.entityEngine();
             final EntityStorage entityStorage = this.entityStorage = new EntityStorage();
