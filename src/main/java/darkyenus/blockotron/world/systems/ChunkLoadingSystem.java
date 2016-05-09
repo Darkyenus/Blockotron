@@ -18,10 +18,13 @@ import darkyenus.blockotron.world.components.Position;
 public class ChunkLoadingSystem extends EntityProcessorSystem {
 
     private final boolean serverMode;
-    /** key is entity */
+    /** key is entity or temporary anchor */
     private final IntMap<Anchor> anchors = new IntMap<>();
     /** key is chunkColumnKey */
     private final LongMap<Integer> chunkUsageLevels = new LongMap<>();
+    /** Keys of anchors which are temporary and will be removed after next update */
+    private final IntArray temporaryAnchors = new IntArray(false, 8);
+    private int nextTemporaryAnchorID = -1;
 
     /** Columns which are loaded, but not needed anymore and kept because they will probably be needed soon. */
     private final LongArray inactiveChunks = new LongArray(true, INACTIVE_CHUNKS_THRESHOLD + 256);
@@ -108,13 +111,24 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
     }
 
     @Override
+    protected void processEntities(float delta) {
+        super.processEntities(delta);
+        final IntArray temporaryAnchors = this.temporaryAnchors;
+        for (int i = 0; i < temporaryAnchors.size; i++) {
+            final Anchor removedTemporary = anchors.remove(temporaryAnchors.get(i));
+            removedTemporary.remove();
+        }
+        temporaryAnchors.clear();
+    }
+
+    @Override
     protected void process(int entity, float delta) {
         if(inShutdown) return;
         final Position position = positionMapper.get(entity);
         anchors.get(entity).moveTo((int)position.x, (int)position.y);
     }
 
-    private void unloadChunk(long columnKey){
+    private void unloadChunk(long columnKey) {
         final World world = this.world;
         final int x = Dimensions.chunkKeyToX(columnKey);
         final int y = Dimensions.chunkKeyToY(columnKey);
@@ -149,6 +163,22 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
             chunkUsageLevels.clear();
         }
         //Done
+    }
+
+    public void insertTemporaryAnchor(long chunkKey, int radius) {
+        final Anchor temporaryAnchor = new Anchor();
+        final int anchorID = this.nextTemporaryAnchorID;
+        nextTemporaryAnchorID--;
+        anchors.put(anchorID, temporaryAnchor);
+        temporaryAnchors.add(anchorID);
+        temporaryAnchor.addTo(chunkKey, radius);
+    }
+
+    public void disableAnchor(int entity) {
+        final Anchor anchor = anchors.remove(entity);
+        if(anchor != null){
+            anchor.remove();
+        }
     }
 
     private final class Anchor {
@@ -229,6 +259,13 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
         public void addTo(int worldX, int worldY, int radius){
             this.chunkX = Dimensions.worldToChunk(worldX);
             this.chunkY = Dimensions.worldToChunk(worldY);
+            this.radius = radius;
+            add();
+        }
+
+        public void addTo(long chunkKey, int radius){
+            this.chunkX = Dimensions.chunkKeyToX(chunkKey);
+            this.chunkY = Dimensions.chunkKeyToY(chunkKey);
             this.radius = radius;
             add();
         }

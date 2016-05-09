@@ -78,7 +78,9 @@ public final class Registry {
     }
 
     public static Class<? extends Component> componentForID(int id){
-        return assignedComponentIDs.get(id);
+        final Class<? extends Component> component = assignedComponentIDs.get(id);
+        if(component == null) throw new IllegalArgumentException("Illegal component ID "+id);
+        return component;
     }
 
     private static final int KRYO_REGISTER_OFFSET = 16;
@@ -116,7 +118,7 @@ public final class Registry {
         register(ChunkLoading.class);
         register(Kinematic.class);
         register(Orientation.class);
-        register(Played.class);
+        register(Player.class);
         register(SelfMotionCapable.class);
     }
 }

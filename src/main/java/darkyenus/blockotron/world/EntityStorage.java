@@ -112,6 +112,10 @@ public final class EntityStorage implements Pool.Poolable {
                     final int componentID = in.readInt(true);
                     final Class component = Registry.componentForID(componentID);
 
+                    if(component == null){
+
+                    }
+
                     final Mapper<Component> mapper = engine.getMapper(component);
 
                     try {

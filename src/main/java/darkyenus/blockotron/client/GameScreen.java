@@ -20,7 +20,7 @@ import darkyenus.blockotron.world.generator.generators.PerlinChunkGenerator;
 import darkyenus.blockotron.world.generator.populators.TreePopulator;
 import darkyenus.blockotron.world.systems.ChunkLoadingSystem;
 import darkyenus.blockotron.world.systems.KinematicSystem;
-import darkyenus.blockotron.world.systems.PlayerInputSystem;
+import darkyenus.blockotron.world.systems.PlayerSystem;
 
 import java.io.File;
 
@@ -40,11 +40,13 @@ public class GameScreen extends Screen {
     @Override
     public void show() {
         if(renderer == null){
+            final String playerName = "singleplayer";
+
             renderer = new WorldRenderer();
             world = new World(
                     new PersistentGeneratorChunkProvider(new File(Configuration.GAME_ROOT, "world"), new PerlinChunkGenerator(), new TreePopulator()),
                     new EngineConfig()
-                            .addSystem(new PlayerInputSystem())
+                            .addSystem(new PlayerSystem(playerName))
                             .addSystem(new KinematicSystem())
                             .addSystem(new ChunkLoadingSystem(true))
                             .addWireResolver(new SelectionWireResolver(renderer)));
@@ -52,13 +54,15 @@ public class GameScreen extends Screen {
 
             shapeRenderer = new ShapeRenderer();
 
-            playerEntity = world.entityEngine().createEntity();
-            world.entityEngine().getMapper(Played.class).create(playerEntity);
-            world.entityEngine().getMapper(Position.class).create(playerEntity).set(0, 0, 30);
-            world.entityEngine().getMapper(Kinematic.class).create(playerEntity).setup(10f, true).setupHitbox(0.4f, 1.8f);
-            world.entityEngine().getMapper(Orientation.class).create(playerEntity);
-            world.entityEngine().getMapper(SelfMotionCapable.class).create(playerEntity).setup(45f, 6f);
-            world.entityEngine().getMapper(ChunkLoading.class).create(playerEntity).setup(true, 7);
+            if(!world.entityEngine().getSystem(PlayerSystem.class).loadPlayer(playerName)){
+                playerEntity = world.entityEngine().createEntity();
+                world.entityEngine().getMapper(Player.class).create(playerEntity).playerName = playerName;
+                world.entityEngine().getMapper(Position.class).create(playerEntity).set(0, 0, 30);
+                world.entityEngine().getMapper(Kinematic.class).create(playerEntity).setup(10f, true).setupHitbox(0.4f, 1.8f);
+                world.entityEngine().getMapper(Orientation.class).create(playerEntity);
+                world.entityEngine().getMapper(SelfMotionCapable.class).create(playerEntity).setup(45f, 6f);
+                world.entityEngine().getMapper(ChunkLoading.class).create(playerEntity).setup(true, 7);
+            }
         }
     }
 
@@ -156,6 +160,6 @@ public class GameScreen extends Screen {
 
     @Override
     public void hide() {
-        world.dispose();
+        world.shutdown();
     }
 }

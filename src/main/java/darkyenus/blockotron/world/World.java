@@ -1,9 +1,7 @@
 package darkyenus.blockotron.world;
 
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.IntArray;
-import com.badlogic.gdx.utils.LongMap;
+import com.badlogic.gdx.utils.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.utils.BoundingBox;
@@ -238,12 +236,17 @@ public final class World {
         return observers;
     }
 
-    public void dispose() {
+    public void shutdown() {
         shutdown = true;
+        //Unload all players
+        //TODO
+        entityEngine.update(0f);
         //Unload everything
         entityEngine.getSystem(ChunkLoadingSystem.class).shutdown();
-        //Save remaining entities (players and entities without a place)
+        entityEngine.update(0f);//Flush entity unloads
+        //Save remaining entities (entities without a place)
         //TODO
+
     }
 
     /** Result of block ray-casting methods. */
