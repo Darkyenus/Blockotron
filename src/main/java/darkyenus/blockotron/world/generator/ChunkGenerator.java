@@ -5,5 +5,5 @@ package darkyenus.blockotron.world.generator;
  */
 public interface ChunkGenerator {
     /** Generate given column. MUST NOT modify blocks outside of the column. */
-    void generateColumn(GeneratorChunkProvider.ChunkColumn column);
+    void generateColumn(PersistentGeneratorChunkProvider.ChunkColumn column);
 }

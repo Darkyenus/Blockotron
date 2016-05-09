@@ -5,7 +5,7 @@ import darkyenus.blockotron.world.Block;
 import darkyenus.blockotron.world.Dimensions;
 import darkyenus.blockotron.world.blocks.BasicBlocks;
 import darkyenus.blockotron.world.generator.ChunkPopulator;
-import darkyenus.blockotron.world.generator.GeneratorChunkProvider;
+import darkyenus.blockotron.world.generator.PersistentGeneratorChunkProvider;
 
 /**
  *
@@ -13,7 +13,7 @@ import darkyenus.blockotron.world.generator.GeneratorChunkProvider;
 public class TreePopulator implements ChunkPopulator {
 
     @Override
-    public void populateColumn(GeneratorChunkProvider.ChunkColumn column) {
+    public void populateColumn(PersistentGeneratorChunkProvider.ChunkColumn column) {
         final int amountOfTrees = MathUtils.random(0, 3);
         for (int i = 0; i < amountOfTrees; i++) {
             final int x = MathUtils.random.nextInt(Dimensions.CHUNK_SIZE), y = MathUtils.random.nextInt(Dimensions.CHUNK_SIZE);
@@ -25,7 +25,7 @@ public class TreePopulator implements ChunkPopulator {
         }
     }
 
-    private void spawnTree(GeneratorChunkProvider.ChunkColumn column, int x, int y, int z){
+    private void spawnTree(PersistentGeneratorChunkProvider.ChunkColumn column, int x, int y, int z){
         int trunkHeight = MathUtils.random(4, 8);
         for (int oX = -2; oX <= 2; oX++) {
             for (int oY = -2; oY <= 2; oY++) {

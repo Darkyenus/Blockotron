@@ -15,12 +15,14 @@ import darkyenus.blockotron.utils.Profiler;
 import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.*;
 import darkyenus.blockotron.world.components.*;
-import darkyenus.blockotron.world.generator.GeneratorChunkProvider;
+import darkyenus.blockotron.world.generator.PersistentGeneratorChunkProvider;
 import darkyenus.blockotron.world.generator.generators.PerlinChunkGenerator;
 import darkyenus.blockotron.world.generator.populators.TreePopulator;
 import darkyenus.blockotron.world.systems.ChunkLoadingSystem;
 import darkyenus.blockotron.world.systems.KinematicSystem;
 import darkyenus.blockotron.world.systems.PlayerInputSystem;
+
+import java.io.File;
 
 /**
  *
@@ -40,7 +42,7 @@ public class GameScreen extends Screen {
         if(renderer == null){
             renderer = new WorldRenderer();
             world = new World(
-                    new GeneratorChunkProvider(new PerlinChunkGenerator(), new TreePopulator()),
+                    new PersistentGeneratorChunkProvider(new File(Configuration.GAME_ROOT, "world"), new PerlinChunkGenerator(), new TreePopulator()),
                     new EngineConfig()
                             .addSystem(new PlayerInputSystem())
                             .addSystem(new KinematicSystem())

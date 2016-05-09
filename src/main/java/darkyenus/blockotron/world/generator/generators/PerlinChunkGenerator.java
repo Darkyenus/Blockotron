@@ -4,7 +4,7 @@ import com.badlogic.gdx.math.MathUtils;
 import darkyenus.blockotron.world.Dimensions;
 import darkyenus.blockotron.world.blocks.BasicBlocks;
 import darkyenus.blockotron.world.generator.ChunkGenerator;
-import darkyenus.blockotron.world.generator.GeneratorChunkProvider;
+import darkyenus.blockotron.world.generator.PersistentGeneratorChunkProvider;
 import org.lwjgl.stb.STBPerlin;
 
 /**
@@ -13,7 +13,7 @@ import org.lwjgl.stb.STBPerlin;
 public class PerlinChunkGenerator implements ChunkGenerator {
 
     @Override
-    public void generateColumn(GeneratorChunkProvider.ChunkColumn column) {
+    public void generateColumn(PersistentGeneratorChunkProvider.ChunkColumn column) {
         float scale = 1f/40f;
         final int xOff = column.chunkX << Dimensions.CHUNK_SIZE_SHIFT;
         final int yOff = column.chunkY << Dimensions.CHUNK_SIZE_SHIFT;
