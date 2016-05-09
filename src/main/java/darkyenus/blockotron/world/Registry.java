@@ -4,8 +4,9 @@ import com.badlogic.gdx.utils.IntMap;
 import com.badlogic.gdx.utils.ObjectIntMap;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
 import com.github.antag99.retinazer.Component;
+import darkyenus.blockotron.utils.BoundingBox;
+import darkyenus.blockotron.utils.kryo.BoundingBoxSerializer;
 import darkyenus.blockotron.world.blocks.Air;
 import darkyenus.blockotron.world.blocks.BasicBlocks;
 import darkyenus.blockotron.world.blocks.Flowerpot;
@@ -27,6 +28,7 @@ public final class Registry {
 
     private static final ObjectMap<String, Block> registeredBlocks = new ObjectMap<>();
     private static final IntMap<Block> assignedBlockIDs = new IntMap<>();
+    /** Block IDs are positive and even (end with 0 in binary) */
     private static int nextBlockID = 0;
 
     public static void register(Block block){
@@ -62,6 +64,7 @@ public final class Registry {
 
     private static final IntMap<Class<? extends Component>> assignedComponentIDs = new IntMap<>();
     private static final ObjectIntMap<Class<? extends Component>> reverseAssignedComponentIDs = new ObjectIntMap<>();
+    /** Component IDs are positive and odd (end with 1 in binary) */
     private static int nextComponentID = 0;
 
     public static void register(Class<? extends Component> component){
@@ -78,21 +81,24 @@ public final class Registry {
         return assignedComponentIDs.get(id);
     }
 
+    private static final int KRYO_REGISTER_OFFSET = 16;
+
     public static Kryo createKryo(){
         Kryo kryo = new Kryo();
         kryo.setAsmEnabled(true);
-        kryo.setCopyReferences(false);
-        kryo.setReferences(false);
+        kryo.setReferences(true);
+        kryo.setAutoReset(false);
         kryo.setRegistrationRequired(true);
 
         for (IntMap.Entry<Class<? extends Component>> entry : assignedComponentIDs.entries()) {
-            kryo.register(entry.value, entry.key);
+            kryo.register(entry.value, entry.key + KRYO_REGISTER_OFFSET);//Offset for default kryo types
         }
-        return kryo;
-    }
 
-    public static Serializer componentSerializer(Kryo kryo, int id){
-        return kryo.getRegistration(id).getSerializer();
+        int nonComponentID = KRYO_REGISTER_OFFSET-2;//Offset for default kryo types
+        //Non-component blocks use even numbers, because components use odd numbers
+        //(Even IDs are assigned to blocks and those are not serialized this way)
+        kryo.register(BoundingBox.class, BoundingBoxSerializer.INSTANCE, nonComponentID += 2);
+        return kryo;
     }
 
     static {

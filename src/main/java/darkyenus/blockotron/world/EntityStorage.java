@@ -1,5 +1,6 @@
 package darkyenus.blockotron.world;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntIntMap;
 import com.badlogic.gdx.utils.Pool;
@@ -13,7 +14,6 @@ import com.github.antag99.retinazer.Mapper;
 
 import java.io.IOException;
 
-import static darkyenus.blockotron.world.Registry.componentSerializer;
 import static darkyenus.blockotron.world.Registry.idForComponent;
 
 /**
@@ -85,7 +85,7 @@ public final class EntityStorage implements Pool.Poolable {
             for (Component component : entityComponents) {
                 final int id = idForComponent(component.getClass());
                 storedEntities.writeInt(id, true);
-                componentSerializer(kryo, id).write(kryo, storedEntities, component);
+                kryo.writeObject(storedEntities, component);
             }
 
             entityComponents.size = 0;//Faster clear
@@ -114,8 +114,12 @@ public final class EntityStorage implements Pool.Poolable {
 
                     final Mapper<Component> mapper = engine.getMapper(component);
 
-                    final Object componentInstance = Registry.componentSerializer(kryo, componentID).read(kryo, in, component);
-                    mapper.add(entity, (Component)componentInstance);
+                    try {
+                        final Component componentInstance = kryo.readObject(in, Registry.componentForID(componentID));
+                        mapper.add(entity, componentInstance);
+                    } catch (Exception ex) {
+                        Gdx.app.error("EntityStorage", "Exception while reading "+componentID+" ("+Registry.componentForID(componentID)+")", ex);
+                    }
                 }
             }
         } catch (IOException e) {

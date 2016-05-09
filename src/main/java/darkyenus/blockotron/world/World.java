@@ -11,6 +11,7 @@ import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.blocks.Air;
 import darkyenus.blockotron.world.components.Position;
+import darkyenus.blockotron.world.systems.ChunkLoadingSystem;
 import org.objenesis.instantiator.ObjectInstantiator;
 
 import static darkyenus.blockotron.world.Dimensions.*;
@@ -29,6 +30,7 @@ public final class World {
     private final Kryo kryo;
 
     private float tickCountdown = 0f;
+    private boolean shutdown = false;
 
     /** Time between logic ticks */
     private static final float TICK_TIME = 1f/20f;
@@ -188,6 +190,7 @@ public final class World {
     }
 
     public void update(float rawDelta){
+        if(shutdown) throw new IllegalStateException("Illegal update, World is in shutdown");
         if(rawDelta > MAX_UPDATE_DELTA){
             rawDelta = MAX_UPDATE_DELTA;
         }
@@ -213,6 +216,8 @@ public final class World {
     }
 
     public Kryo kryo(){
+        final Kryo kryo = this.kryo;
+        kryo.reset();
         return kryo;
     }
 
@@ -231,6 +236,14 @@ public final class World {
     /** Get all observers of this world. Mostly used to notify observers. */
     public Iterable<WorldObserver> observers() {
         return observers;
+    }
+
+    public void dispose() {
+        shutdown = true;
+        //Unload everything
+        entityEngine.getSystem(ChunkLoadingSystem.class).shutdown();
+        //Save remaining entities (players and entities without a place)
+        //TODO
     }
 
     /** Result of block ray-casting methods. */

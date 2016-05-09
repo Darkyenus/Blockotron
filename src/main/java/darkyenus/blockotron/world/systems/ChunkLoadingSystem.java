@@ -26,6 +26,8 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
     /** Columns which are loaded, but not needed anymore and kept because they will probably be needed soon. */
     private final LongArray inactiveChunks = new LongArray(true, INACTIVE_CHUNKS_THRESHOLD + 256);
 
+    private boolean inShutdown = false;
+
     private static final int INACTIVE_CHUNKS_THRESHOLD = 512;
     private static final int INACTIVE_CHUNKS_KEEP = 128;
 
@@ -54,6 +56,7 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
         family.addListener(new EntityListener() {
             @Override
             public void inserted(EntitySet entities) {
+                if(inShutdown) return;
                 final IntArray indices = entities.getIndices();
                 final int[] items = indices.items;
                 final int size = indices.size;
@@ -87,6 +90,7 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
 
             @Override
             public void removed(EntitySet entities) {
+                if(inShutdown) return;
                 final IntArray indices = entities.getIndices();
                 final int[] items = indices.items;
                 final int size = indices.size;
@@ -105,8 +109,46 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
 
     @Override
     protected void process(int entity, float delta) {
+        if(inShutdown) return;
         final Position position = positionMapper.get(entity);
         anchors.get(entity).moveTo((int)position.x, (int)position.y);
+    }
+
+    private void unloadChunk(long columnKey){
+        final World world = this.world;
+        final int x = Dimensions.chunkKeyToX(columnKey);
+        final int y = Dimensions.chunkKeyToY(columnKey);
+
+        for (int z = 0; z < Dimensions.CHUNK_LAYERS; z++) {
+            world.unloadChunk(x, y, z);
+        }
+    }
+
+    public void shutdown(){
+        if(inShutdown) return;
+        inShutdown = true;
+        //Delete anchors
+        anchors.clear();
+        //Unload inactive chunks
+        {
+            final int toRemove = inactiveChunks.size;
+            final long[] items = inactiveChunks.items;
+            for (int item = 0; item < toRemove; item++) {
+                final long key = items[item];
+                unloadChunk(key);
+            }
+            inactiveChunks.clear();
+        }
+        //Unload active chunks
+        {
+            final LongMap.Keys activeChunks = chunkUsageLevels.keys();
+            while(activeChunks.hasNext){
+                final long key = activeChunks.next();
+                unloadChunk(key);
+            }
+            chunkUsageLevels.clear();
+        }
+        //Done
     }
 
     private final class Anchor {
@@ -143,7 +185,6 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
         public void remove(){
             final LongMap<Integer> chunkUsageLevels = ChunkLoadingSystem.this.chunkUsageLevels;
             final LongArray inactiveChunks = ChunkLoadingSystem.this.inactiveChunks;
-            final World world = ChunkLoadingSystem.this.world;
 
             final int chunkX = this.chunkX;
             final int chunkY = this.chunkY;
@@ -167,13 +208,7 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
                 final long[] items = inactiveChunks.items;
                 for (int item = 0; item < toRemove; item++) {
                     final long key = items[item];
-
-                    final int x = Dimensions.chunkKeyToX(key);
-                    final int y = Dimensions.chunkKeyToY(key);
-
-                    for (int z = 0; z < Dimensions.CHUNK_LAYERS; z++) {
-                        world.unloadChunk(x, y, z);
-                    }
+                    unloadChunk(key);
                 }
 
                 inactiveChunks.removeRange(0, toRemove - 1);

@@ -153,4 +153,9 @@ public class GameScreen extends Screen {
             shapeRenderer.end();
         }
     }
+
+    @Override
+    public void hide() {
+        world.dispose();
+    }
 }
