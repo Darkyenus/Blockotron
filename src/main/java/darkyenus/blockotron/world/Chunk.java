@@ -6,10 +6,11 @@ import com.badlogic.gdx.utils.IntIntMap;
 import com.github.antag99.retinazer.Engine;
 import darkyenus.blockotron.world.blocks.Air;
 import darkyenus.blockotron.world.components.BlockPosition;
-import static darkyenus.blockotron.world.Dimensions.*;
 
 import java.util.Arrays;
 import java.util.Random;
+
+import static darkyenus.blockotron.world.Dimensions.*;
 
 /**
  * Positioned cube in the {@link World}, holding blocks, entities and other world-grid related data, like lighting.
@@ -19,7 +20,7 @@ import java.util.Random;
 public final class Chunk {
 
     /** World this chunk is part of. World does not necessarily have to know about this chunk.
-     * @see #loaded */
+     * @see #status */
     public final World world;
     /** Position of this chunk in the {@link #world}.
      * Chunk coordinates, multiply by {@link Dimensions#CHUNK_SIZE} to get the world coordinates of this chunk's origin. */
@@ -41,18 +42,23 @@ public final class Chunk {
      * with key being their {@link Dimensions#inChunkKey(int, int, int)} of in-chunk coords. */
     private final IntIntMap blockEntities = new IntIntMap();
 
-    /** Set by {@link #world}. Loaded chunk may interact with other chunks, non-loaded must not. */
-    private boolean loaded = false;
+    /** Chunk is being generated or loaded. It may modify itself.
+     * This is the default status and must be changed by endPopulating first. */
+    private static final byte STATUS_POPULATING = 1;
+    /** Chunk is inactive and may not be changed. */
+    private static final byte STATUS_INACTIVE = 2;
+    /** Chunk is actively used. */
+    private static final byte STATUS_ACTIVE = 3;
+    /** One of three above values. */
+    private byte status = STATUS_POPULATING;
 
-    /** Storage of entities (block and normal) on this chunk when not loaded. */
+    /** Storage of entities (block and normal) on this chunk when not loaded.
+     * Exists only if status is INACTIVE and block entities have been created. (INACTIVE + null = block entities not generated yet) */
     private EntityStorage entityStorage = null;
-    /** Positions of block entities not yet spawned. */
-    private IntArray pendingBlockEntities = null;
 
     //Iteration hints
-    /** Amount of blocks in this chunk that are not air.
-     * <br/>WARNING: DIRECT USE EXPERT ONLY, DO NOT MODIFY */
-    public int nonAirBlockCount = 0;
+    /** Amount of blocks in this chunk that are not air. */
+    private int nonAirBlockCount = 0;
 
     public Chunk(World world, int x, int y, int z) {
         this.world = world;
@@ -62,69 +68,80 @@ public final class Chunk {
         Arrays.fill(blocks, Air.AIR);
     }
 
-    void load(){
-        //Update occlusions
-        for (int z = 0; z < CHUNK_SIZE; z++) {
-            for (int y = 0; y < CHUNK_SIZE; y++) {
-                for (int x = 0; x < CHUNK_SIZE; x++) {
-                    updateOcclusion(x, y, z);
-                }
-            }
-        }
+	/** End populating this chunk and prepare it for its lifecycle.
+	 * @param storage NON NULL if loaded from file and block entities have already been created, NULL if just generated and block
+	 *           entities have not yet been created. */
+	public void endPopulating (EntityStorage storage) {
+		if (status != STATUS_POPULATING) throw new AssertionError("Chunk must be populating, is " + status);
+		status = STATUS_INACTIVE;
 
-        final World world = this.world;
-        final Engine entityEngine = world.entityEngine();
+		int nonAirBlockCount = 0;
+		for (int key = 0; key < blocks.length; key++) {
+			Block block = blocks[key];
+			if (block != Air.AIR) {
+				nonAirBlockCount++;
+				final int x = inChunkKeyToX(key);
+				final int y = inChunkKeyToY(key);
+				final int z = inChunkKeyToZ(key);
+				updateLocalOcclusion(x, y, z);
+			}
+		}
+		this.nonAirBlockCount = nonAirBlockCount;
+		this.entityStorage = storage;
+	}
 
-        //Deserialize entities
-        if (entityStorage != null) {
-            entityStorage.loadEntities(entityEngine);
-            entityStorage = null;
-        }
+	void makeActive () {
+		if (status != STATUS_INACTIVE) throw new AssertionError("Chunk must be inactive, is " + status);
 
-        //Add pending block entities
-        if(pendingBlockEntities != null){
-            final int[] items = pendingBlockEntities.items;
-            final int size = pendingBlockEntities.size;
-            final Block[] blocks = this.blocks;
+		final World world = this.world;
+		final Engine entityEngine = world.entityEngine();
 
-            for (int i = 0; i < size; i++) {
-                final int key = items[i];
-                final Block block = blocks[key];
-                if(block.hasEntity()){
-                    final int entity = entityEngine.createEntity();
-                    final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
-                    blockPosition.x = this.x << CHUNK_SIZE_SHIFT + inChunkKeyToX(key);
-                    blockPosition.y = this.y << CHUNK_SIZE_SHIFT + inChunkKeyToY(key);
-                    blockPosition.z = this.z << CHUNK_SIZE_SHIFT + inChunkKeyToZ(key);
-                    block.initializeEntity(world, entity);
-                    blockEntities.put(key, entity);
-                }
-            }
-            pendingBlockEntities = null;
-        }
+		// Deserialize or create entities
+		if (entityStorage == null) {
+			// Block entities never created
+			for (int key = 0; key < blocks.length; key++) {
+				Block block = blocks[key];
+				if (block.hasEntity()) {
+					final int x = inChunkKeyToX(key);
+					final int y = inChunkKeyToY(key);
+					final int z = inChunkKeyToZ(key);
 
-        this.loaded = true;
-    }
+					final int entity = entityEngine.createEntity();
+					final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
+					blockPosition.x = this.x << CHUNK_SIZE_SHIFT + x;
+					blockPosition.y = this.y << CHUNK_SIZE_SHIFT + y;
+					blockPosition.z = this.z << CHUNK_SIZE_SHIFT + z;
+					block.initializeEntity(world, entity);
+					blockEntities.put(key, entity);
+				}
+			}
+		} else {
+			entityStorage.loadEntities(world);
+			EntityStorage.free(entityStorage);
+			entityStorage = null;
+		}
 
-    void unload(){
-        this.loaded = false;
-        //Serialize entities
-        final IntArray entities = this.entities;
-        final IntIntMap blockEntities = this.blockEntities;
+		this.status = STATUS_ACTIVE;
+	}
 
-        if(entities.size != 0 || blockEntities.size != 0){
-            final Engine engine = world.entityEngine();
-            final EntityStorage entityStorage = this.entityStorage = new EntityStorage();
+	void makeInactive () {
+		if (status != STATUS_ACTIVE) throw new AssertionError("Chunk must be active, is " + status);
+		this.status = STATUS_INACTIVE;
+		// Serialize entities
+		final IntArray entities = this.entities;
+		final IntIntMap blockEntities = this.blockEntities;
 
-            //Standard entities
-            entityStorage.storeEntities(engine, entities.items, entities.size);
-            entities.clear();
+		final World world = this.world;
+		final EntityStorage entityStorage = this.entityStorage = EntityStorage.obtain();
 
-            //Block entities
-            entityStorage.storeEntities(engine, blockEntities.values());
-            blockEntities.clear();
-        }
-    }
+		// Standard entities
+		entityStorage.storeEntities(world, entities.items, entities.size);
+		entities.clear();
+
+		// Block entities
+		entityStorage.storeEntities(world, blockEntities.values());
+		blockEntities.clear();
+	}
 
     /** Get block inside this chunk, using in-chunk coordinates.
      * Never returns null, undefined behavior if invalid coordinates. */
@@ -159,46 +176,33 @@ public final class Chunk {
      * Updates the occlusion masks of neighbors (in the same chunk, for now).
      * If chunk is loaded, notifies world about the change. */
     public void setLocalBlock(int x, int y, int z, Block block) {
+        if(status == STATUS_INACTIVE) throw new IllegalStateException("Do not modify inactive chunk");
+
         final Block[] blocks = this.blocks;
         final int coord = inChunkKey(x, y, z);
         final Block old = blocks[coord];
         if (old == block) return;
 		blocks[coord] = block;
 
+        if(status == STATUS_POPULATING) return;
+
 		// Remove old block entity
 		final Engine entityEngine = world.entityEngine();
 		if (old.hasEntity()) {
-            if(loaded){
-                final int removed = blockEntities.remove(coord, -1);
-                assert removed != -1 : "Block " + block + " didn't have associated entity even though it should have.";
-                entityEngine.destroyEntity(removed);
-            } else {
-                if (pendingBlockEntities == null || !pendingBlockEntities.removeValue(coord)) {
-                    if(entityStorage != null){
-                        entityStorage.removeBlockEntity(x, y, z);
-                    } else {
-                        assert false : "Failed to remove old block entity";
-                    }
-                }
-            }
+            final int removed = blockEntities.remove(coord, -1);
+            assert removed != -1 : "Block " + block + " didn't have associated entity even though it should have.";
+            entityEngine.destroyEntity(removed);
 		}
 
 		// Add new block entity
 		if (block.hasEntity()) {
-            if(loaded) {
-                final int entity = entityEngine.createEntity();
-                final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
-                blockPosition.x = this.x << CHUNK_SIZE_SHIFT + x;
-                blockPosition.y = this.y << CHUNK_SIZE_SHIFT + y;
-                blockPosition.z = this.z << CHUNK_SIZE_SHIFT + z;
-                block.initializeEntity(world, entity);
-                blockEntities.put(coord, entity);
-            } else {
-                if(pendingBlockEntities == null){
-                    pendingBlockEntities = new IntArray(false, 32);
-                }
-                pendingBlockEntities.add(coord);
-            }
+            final int entity = entityEngine.createEntity();
+            final BlockPosition blockPosition = entityEngine.getMapper(BlockPosition.class).create(entity);
+            blockPosition.x = this.x << CHUNK_SIZE_SHIFT + x;
+            blockPosition.y = this.y << CHUNK_SIZE_SHIFT + y;
+            blockPosition.z = this.z << CHUNK_SIZE_SHIFT + z;
+            block.initializeEntity(world, entity);
+            blockEntities.put(coord, entity);
 		}
 
         //Update iterator hints
@@ -208,21 +212,19 @@ public final class Chunk {
             nonAirBlockCount--;
         }
 
-        if (loaded) {
-            //Update own occlusion mask
-            updateLocalOcclusion(x,y,z);
+        //Update own occlusion mask
+        updateLocalOcclusion(x,y,z);
 
-            //Update neighbor occlusion masks
-            updateOcclusion(x-1, y, z);
-            updateOcclusion(x+1, y, z);
-            updateOcclusion(x, y-1, z);
-            updateOcclusion(x, y+1, z);
-            updateOcclusion(x, y, z-1);
-            updateOcclusion(x, y, z+1);
+        //Update neighbor occlusion masks
+        updateOcclusion(x-1, y, z);
+        updateOcclusion(x+1, y, z);
+        updateOcclusion(x, y-1, z);
+        updateOcclusion(x, y+1, z);
+        updateOcclusion(x, y, z-1);
+        updateOcclusion(x, y, z+1);
 
-            for (WorldObserver observer : world.observers()) {
-                observer.blockChanged(this, x, y, z, old, block);
-            }
+        for (WorldObserver observer : world.observers()) {
+            observer.blockChanged(this, x, y, z, old, block);
         }
     }
 
@@ -267,7 +269,7 @@ public final class Chunk {
         }
         if(newOcclusion != oldOcclusion){
             this.occlusion[coord] = newOcclusion;
-            if(loaded){
+            if(status == STATUS_ACTIVE){
                 for (WorldObserver observer : world.observers()) {
                     observer.blockOcclusionChanged(this, x, y ,z, oldOcclusion, newOcclusion);
                 }
@@ -333,6 +335,15 @@ public final class Chunk {
     /** Get the list of all block entities on this chunk. Do not modify, use for iteration only. */
     public IntIntMap blockEntities() {
         return blockEntities;
+    }
+
+    /** Returns the entity storage, which exists only if the chunk is not loaded. */
+    public EntityStorage getEntityStorage(){
+        return entityStorage;
+    }
+
+    public boolean isEmpty() {
+        return status != STATUS_POPULATING && nonAirBlockCount == 0;
     }
 
     @Override

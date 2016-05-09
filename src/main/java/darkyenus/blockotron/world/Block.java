@@ -34,6 +34,9 @@ public abstract class Block {
 	/** Non-null collision bounding block of this block. */
 	public final BoundingBox hitBox;
 
+	/** Set by Registry during registration */
+	int registryID = -1;
+
 	protected Block (String id, int flags) {
 		this.id = id;
 		this.flags = (byte)flags;
@@ -70,6 +73,11 @@ public abstract class Block {
     public final boolean hasEntity() {
         return (flags & HAS_ENTITY) != 0;
     }
+
+	/** ID of block in Registry, -1 if not registered */
+	public final int getRegistryID(){
+		return registryID;
+	}
 
     /** Called when block of this type is added to a world.
      * The entity is already created and has BlockPosition component.

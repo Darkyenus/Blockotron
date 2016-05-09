@@ -167,40 +167,39 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
             if(dirty){
                 this.dirty = false;
 
-                final World world = chunk.world;
-                final int worldX = chunk.x << CHUNK_SIZE_SHIFT;
-                final int worldY = chunk.y << CHUNK_SIZE_SHIFT;
-                final int worldZ = chunk.z << CHUNK_SIZE_SHIFT;
-
                 blockBatch.begin();
-                blockBatch.beginTransparent(0, 0, 0);
-                blockBatch.pauseTransparent();
+                if(!chunk.isEmpty()){
+                    final World world = chunk.world;
+                    final int worldX = chunk.x << CHUNK_SIZE_SHIFT;
+                    final int worldY = chunk.y << CHUNK_SIZE_SHIFT;
+                    final int worldZ = chunk.z << CHUNK_SIZE_SHIFT;
 
-                final Block[] blocks = chunk.blocks;
-                final byte[] occlusion = chunk.occlusion;
+                    blockBatch.beginTransparent(0, 0, 0);
+                    blockBatch.pauseTransparent();
 
-                int nonAirRemaining = chunk.nonAirBlockCount;
-                for (int i = 0; i < blocks.length && nonAirRemaining > 0; i++) {
-                    final Block block = blocks[i];
-                    if (block != Air.AIR) {
-                        final int cX = i & 0xF;
-                        final int cY = (i >> 4) & 0xF;
-                        final int cZ = (i >> 8) & 0xFF;
+                    final Block[] blocks = chunk.blocks;
+                    final byte[] occlusion = chunk.occlusion;
 
-                        if(block.isTransparent()) {
-                            blockBatch.resumeTransparent();
-                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
-                            blockBatch.pauseTransparent();
-                        } else {
-                            block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
+                    for (int i = 0; i < blocks.length; i++) {
+                        final Block block = blocks[i];
+                        if (block != Air.AIR) {
+                            final int cX = i & 0xF;
+                            final int cY = (i >> 4) & 0xF;
+                            final int cZ = (i >> 8) & 0xFF;
+
+                            if(block.isTransparent()) {
+                                blockBatch.resumeTransparent();
+                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
+                                blockBatch.pauseTransparent();
+                            } else {
+                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
+                            }
                         }
-
-                        nonAirRemaining--;
                     }
-                }
 
-                blockBatch.resumeTransparent();
-                blockBatch.endTransparent();
+                    blockBatch.resumeTransparent();
+                    blockBatch.endTransparent();
+                }
                 blockBatch.end();
             }
 

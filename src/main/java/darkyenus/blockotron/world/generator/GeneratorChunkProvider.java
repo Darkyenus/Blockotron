@@ -67,6 +67,7 @@ public final class GeneratorChunkProvider implements ChunkProvider {
         for (ChunkPopulator populator : populators) {
             populator.populateColumn(column);
         }
+        column.ready = true;
     }
 
     @Override
@@ -83,7 +84,9 @@ public final class GeneratorChunkProvider implements ChunkProvider {
         public final int chunkX, chunkY;
         private final Chunk[] chunks = new Chunk[CHUNK_LAYERS];
         private final Mask borrowedChunks = new Mask();
+        private final Mask readyChunks = new Mask();
         private boolean populated = false;
+        private boolean ready = false;
 
         private ChunkColumn(int chunkX, int chunkY) {
             this.chunkX = chunkX;
@@ -91,10 +94,7 @@ public final class GeneratorChunkProvider implements ChunkProvider {
         }
 
         public Chunk borrowChunk(int chunkZ){
-            final Chunk chunk = chunks[chunkZ];
-            if(chunk == null){
-                return chunks[chunkZ] = new Chunk(world, chunkX, chunkY, chunkZ);
-            }
+            final Chunk chunk = getChunk(chunkZ);
             borrowedChunks.set(chunkZ);
             return chunk;
         }
@@ -104,9 +104,13 @@ public final class GeneratorChunkProvider implements ChunkProvider {
         }
 
         private Chunk getChunk(int chunkZ) {
-            final Chunk chunk = chunks[chunkZ];
+            Chunk chunk = chunks[chunkZ];
             if(chunk == null){
-                return chunks[chunkZ] = new Chunk(world, chunkX, chunkY, chunkZ);
+                chunk = chunks[chunkZ] = new Chunk(world, chunkX, chunkY, chunkZ);
+            }
+            if(ready && !readyChunks.get(chunkZ)){
+                chunk.endPopulating(null);
+                readyChunks.set(chunkZ);
             }
             return chunk;
         }
@@ -203,7 +207,7 @@ public final class GeneratorChunkProvider implements ChunkProvider {
         public int getTopNonAirBlockZ(int inChunkX, int inChunkY){
             for (int chunkZ = CHUNK_LAYERS-1; chunkZ >= 0; chunkZ--) {
                 final Chunk chunk = chunks[chunkZ];
-                if(chunk == null || chunk.nonAirBlockCount == 0) continue;
+                if(chunk == null || chunk.isEmpty()) continue;
                 for (int inChunkZ = CHUNK_SIZE-1; inChunkZ >= 0; inChunkZ--) {
                     final Block block = chunk.getLocalBlock(inChunkX, inChunkY, inChunkZ);
                     if(block != Air.AIR) return (chunkZ << CHUNK_SIZE_SHIFT) + inChunkZ;

@@ -19,7 +19,8 @@ lazy val retinazer = project in file("retinazer") / "retinazer" settings (
 libraryDependencies ++= Seq(
   "com.badlogicgames.gdx" % "gdx" % gdxVersion,
   "com.badlogicgames.gdx" % "gdx-backend-lwjgl3" % gdxVersion,
-  "com.badlogicgames.gdx" % "gdx-platform" % gdxVersion classifier "natives-desktop"
+  "com.badlogicgames.gdx" % "gdx-platform" % gdxVersion classifier "natives-desktop",
+  "com.esotericsoftware" % "kryo" % "3.0.3"
 )
 
 autoScalaLibrary := false

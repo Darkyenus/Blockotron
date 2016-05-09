@@ -4,12 +4,15 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntArray;
 import com.badlogic.gdx.utils.LongMap;
+import com.esotericsoftware.kryo.Kryo;
 import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.utils.BoundingBox;
 import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.blocks.Air;
 import darkyenus.blockotron.world.components.Position;
+import org.objenesis.instantiator.ObjectInstantiator;
+
 import static darkyenus.blockotron.world.Dimensions.*;
 
 /**
@@ -23,6 +26,7 @@ public final class World {
     private final Array<WorldObserver> observers = new Array<>(false, 8, WorldObserver.class);
 
     private final Engine entityEngine;
+    private final Kryo kryo;
 
     private float tickCountdown = 0f;
 
@@ -75,6 +79,9 @@ public final class World {
         };
         engine.wire(chunkPositionMapper);
         engine.getFamily(Family.with(Position.class)).addListener(chunkPositionMapper);
+
+        kryo = Registry.createKryo();
+        kryo.setInstantiatorStrategy(new ComponentInstantiationStrategy());
     }
 
     /** Return chunk at given chunk-coordinates. Chunk is retrieved from ChunkProvider if not loaded.
@@ -86,7 +93,7 @@ public final class World {
         if(existing == null) {
             final Chunk newChunk = chunkProvider.borrowChunk(chunkX, chunkY, chunkZ);
             chunks.put(key, newChunk);
-            newChunk.load();
+            newChunk.makeActive();
             for (WorldObserver observer : observers()) {
                 observer.chunkLoaded(newChunk);
             }
@@ -104,7 +111,7 @@ public final class World {
             for (WorldObserver observer : observers()) {
                 observer.chunkUnloaded(loaded);
             }
-            loaded.unload();
+            loaded.makeInactive();
             chunkProvider.returnChunk(loaded);
         }
     }
@@ -203,6 +210,10 @@ public final class World {
 
     public Engine entityEngine(){
         return entityEngine;
+    }
+
+    public Kryo kryo(){
+        return kryo;
     }
 
     /** Can't be removed.
@@ -371,6 +382,18 @@ public final class World {
         public void reset(BlockFilter filter) {
             this.block = null;
             this.filter = filter;
+        }
+    }
+
+    private class ComponentInstantiationStrategy extends Kryo.DefaultInstantiatorStrategy {
+        @Override
+        public ObjectInstantiator newInstantiatorOf(Class type) {
+            if(Component.class.isAssignableFrom(type)){
+                final Mapper mapper = entityEngine.getMapper(type);
+                return mapper::createComponent;
+            } else {
+                return super.newInstantiatorOf(type);
+            }
         }
     }
 }
