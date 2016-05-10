@@ -99,6 +99,7 @@ public final class Registry {
         int nonComponentID = KRYO_REGISTER_OFFSET-2;//Offset for default kryo types
         //Non-component blocks use even numbers, because components use odd numbers
         //(Even IDs are assigned to blocks and those are not serialized this way)
+        kryo.register(byte[].class, nonComponentID += 2);
         kryo.register(BoundingBox.class, BoundingBoxSerializer.INSTANCE, nonComponentID += 2);
         return kryo;
     }

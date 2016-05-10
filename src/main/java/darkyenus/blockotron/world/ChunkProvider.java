@@ -8,6 +8,9 @@ public interface ChunkProvider {
     /** Called when added to a world. One instance may be assigned to only one world. */
     void initialize(World world);
 
+    /** Called when previously initialized world shuts down */
+    void shutdown();
+
     /** Return chunk at given chunk-coordinates. Chunk may be empty, but never null. */
     Chunk borrowChunk(int x, int y, int z);
 

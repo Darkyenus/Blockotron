@@ -112,10 +112,6 @@ public final class EntityStorage implements Pool.Poolable {
                     final int componentID = in.readInt(true);
                     final Class component = Registry.componentForID(componentID);
 
-                    if(component == null){
-
-                    }
-
                     final Mapper<Component> mapper = engine.getMapper(component);
 
                     try {
@@ -133,7 +129,7 @@ public final class EntityStorage implements Pool.Poolable {
     }
 
     public static void saveAndFreeStorage(EntityStorage storage, Output out){
-        if(storage == null){
+        if(storage == null) {
             out.writeInt(-1);
         } else {
             final Output storedEntities = storage.storedEntities;
@@ -141,6 +137,21 @@ public final class EntityStorage implements Pool.Poolable {
             out.write(storedEntities.getBuffer(), 0, storedEntities.position());
             free(storage);
         }
+    }
+
+    public static byte[] saveEntitiy(World world, int entity){
+        final EntityStorage storage = obtain();
+        storage.storeEntity(world.entityEngine(), world.entityEngine().getMappers(), world.kryo(), entity);
+        final byte[] result = storage.storedEntities.toBytes();
+        free(storage);
+        return result;
+    }
+
+    public static void loadEntity(World world, byte[] entity){
+        final EntityStorage storage = obtain();
+        storage.storedEntities.write(entity);
+        storage.loadEntities(world);
+        free(storage);
     }
 
     public static EntityStorage obtainAndLoadStorage(Input in){

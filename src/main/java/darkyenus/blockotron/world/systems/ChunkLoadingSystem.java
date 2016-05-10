@@ -5,8 +5,7 @@ import com.badlogic.gdx.utils.IntMap;
 import com.badlogic.gdx.utils.LongArray;
 import com.badlogic.gdx.utils.LongMap;
 import com.github.antag99.retinazer.*;
-import darkyenus.blockotron.world.Dimensions;
-import darkyenus.blockotron.world.World;
+import darkyenus.blockotron.world.*;
 import darkyenus.blockotron.world.components.BlockPosition;
 import darkyenus.blockotron.world.components.ChunkLoading;
 import darkyenus.blockotron.world.components.Position;
@@ -22,9 +21,6 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
     private final IntMap<Anchor> anchors = new IntMap<>();
     /** key is chunkColumnKey */
     private final LongMap<Integer> chunkUsageLevels = new LongMap<>();
-    /** Keys of anchors which are temporary and will be removed after next update */
-    private final IntArray temporaryAnchors = new IntArray(false, 8);
-    private int nextTemporaryAnchorID = -1;
 
     /** Columns which are loaded, but not needed anymore and kept because they will probably be needed soon. */
     private final LongArray inactiveChunks = new LongArray(true, INACTIVE_CHUNKS_THRESHOLD + 256);
@@ -108,17 +104,24 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
                 }
             }
         });
-    }
 
-    @Override
-    protected void processEntities(float delta) {
-        super.processEntities(delta);
-        final IntArray temporaryAnchors = this.temporaryAnchors;
-        for (int i = 0; i < temporaryAnchors.size; i++) {
-            final Anchor removedTemporary = anchors.remove(temporaryAnchors.get(i));
-            removedTemporary.remove();
-        }
-        temporaryAnchors.clear();
+        world.addObserver(new WorldObserver.WorldObserverAdapter() {
+            @SuppressWarnings("StatementWithEmptyBody")
+            @Override
+            public void chunkLoaded(Chunk chunk) {
+                //Chunk was loaded, do we know about it?
+                final long key = Dimensions.chunkColumnKey(chunk.x, chunk.y);
+                if(chunkUsageLevels.containsKey(key)){
+                    //All is fine, it is active
+                } else if(inactiveChunks.contains(key)){
+                    //All is fine, it is already inactive
+                } else {
+                    //We do not know anything about this!
+                    //Add to inactive chunks to be unloaded later
+                    inactiveChunks.add(key);
+                }
+            }
+        });
     }
 
     @Override
@@ -165,22 +168,6 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
         //Done
     }
 
-    public void insertTemporaryAnchor(long chunkKey, int radius) {
-        final Anchor temporaryAnchor = new Anchor();
-        final int anchorID = this.nextTemporaryAnchorID;
-        nextTemporaryAnchorID--;
-        anchors.put(anchorID, temporaryAnchor);
-        temporaryAnchors.add(anchorID);
-        temporaryAnchor.addTo(chunkKey, radius);
-    }
-
-    public void disableAnchor(int entity) {
-        final Anchor anchor = anchors.remove(entity);
-        if(anchor != null){
-            anchor.remove();
-        }
-    }
-
     private final class Anchor {
 
         private int chunkX, chunkY;
@@ -199,6 +186,7 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
                 for (int y = chunkY - radius; y <= chunkY + radius; y++) {
                     final long key = Dimensions.chunkColumnKey(x, y);
                     final Integer level = chunkUsageLevels.get(key, 0);
+                    chunkUsageLevels.put(key, level + 1);
                     if(level == 0){
                         if (!inactiveChunks.removeValue(key)) {
                             //Was not inactive, load
@@ -207,7 +195,6 @@ public class ChunkLoadingSystem extends EntityProcessorSystem {
                             }
                         }
                     }
-                    chunkUsageLevels.put(key, level + 1);
                 }
             }
         }

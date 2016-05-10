@@ -3,8 +3,10 @@ package darkyenus.blockotron.world.generator;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.LongMap;
 import com.badlogic.gdx.utils.StreamUtils;
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.github.antag99.retinazer.EntitySystem;
 import com.github.antag99.retinazer.util.Mask;
 import darkyenus.blockotron.world.*;
 import darkyenus.blockotron.world.blocks.Air;
@@ -38,6 +40,12 @@ public final class PersistentGeneratorChunkProvider implements ChunkProvider {
     @Override
     public void initialize(World world) {
         this.world = world;
+        loadWorld();
+    }
+
+    @Override
+    public void shutdown() {
+        saveWorld();
     }
 
     private ChunkColumn getGeneratedColumn(int x, int y) {
@@ -72,17 +80,21 @@ public final class PersistentGeneratorChunkProvider implements ChunkProvider {
 
     //region Persistence
 
+    private File getWorldFile(){
+        return new File(worldBase, "world.bin");
+    }
+
     private File getChunkColumnFile(ChunkColumn column){
         //noinspection ResultOfMethodCallIgnored
         worldBase.mkdirs();
         return new File(worldBase, "chunk." + column.chunkX + "." + column.chunkY + ".bin");
     }
 
-    private final Output columnOutput_TMP = new Output(1<<10);
-    private final Input columnInput_TMP = new Input(1<<10);
+    private final Output output_TMP = new Output(1<<10);
+    private final Input input_TMP = new Input(1<<10);
 
     private boolean loadColumn(ChunkColumn column){
-        final Input in = columnInput_TMP;
+        final Input in = input_TMP;
         final File file = getChunkColumnFile(column);
         if(!file.canRead()) return false;
         try {
@@ -99,7 +111,7 @@ public final class PersistentGeneratorChunkProvider implements ChunkProvider {
     }
 
     private boolean saveColumn(ChunkColumn column) {
-        final Output out = columnOutput_TMP;
+        final Output out = output_TMP;
         try {
             final File file = getChunkColumnFile(column);
             out.clear();
@@ -117,6 +129,48 @@ public final class PersistentGeneratorChunkProvider implements ChunkProvider {
         return false;
     }
 
+    private void loadWorld(){
+        final Input in = input_TMP;
+        final File file = getWorldFile();
+        if(!file.canRead()) return;
+        try {
+            in.setInputStream(new FileInputStream(file));
+
+            final Kryo kryo = world.kryo();
+            for (EntitySystem system : world.entityEngine().getSystems()) {
+                if(system instanceof SelfSerializable){
+                    ((SelfSerializable) system).deserialize(in, kryo);
+                }
+            }
+
+        } catch (Exception e) {
+            Gdx.app.error(LOG, "Failed to load world", e);
+        } finally {
+            StreamUtils.closeQuietly(in);
+        }
+    }
+
+    private void saveWorld(){
+        final Output out = output_TMP;
+        try {
+            final File file = getWorldFile();
+            out.clear();
+            out.setOutputStream(new FileOutputStream(file, false));
+
+            final Kryo kryo = world.kryo();
+            for (EntitySystem system : world.entityEngine().getSystems()) {
+                if(system instanceof SelfSerializable){
+                    ((SelfSerializable) system).serialize(out, kryo);
+                }
+            }
+
+            out.close();
+        } catch (Exception e) {
+            Gdx.app.error(LOG, "Failed to save world", e);
+        } finally {
+            StreamUtils.closeQuietly(out);
+        }
+    }
     //endregion
 
     private void generateColumn(ChunkColumn column) {

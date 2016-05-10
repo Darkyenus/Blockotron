@@ -1,5 +1,6 @@
 package darkyenus.blockotron.world;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.*;
 import com.esotericsoftware.kryo.Kryo;
@@ -10,6 +11,7 @@ import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.blocks.Air;
 import darkyenus.blockotron.world.components.Position;
 import darkyenus.blockotron.world.systems.ChunkLoadingSystem;
+import darkyenus.blockotron.world.systems.PlayerSystem;
 import org.objenesis.instantiator.ObjectInstantiator;
 
 import static darkyenus.blockotron.world.Dimensions.*;
@@ -40,7 +42,6 @@ public final class World {
 
     public World (ChunkProvider chunkProvider, EngineConfig engineConfig) {
         this.chunkProvider = chunkProvider;
-        chunkProvider.initialize(this);
         engineConfig.addWireResolver(new SelectionWireResolver(this));// Auto wire World instances
         final Engine engine = new Engine(engineConfig);
         entityEngine = engine;
@@ -69,8 +70,11 @@ public final class World {
 
                     final Position position = positionMapper.get(entity);
 
-                    final Chunk chunk = getLoadedChunk(position.toChunkKey());
-                    if (chunk == null) continue;
+                    final Chunk chunk = loadChunk(position.getChunkX(), position.getChunkY(), position.getClampedChunkZ());
+                    if (chunk == null) {
+                        Gdx.app.error("PositionListener","New entity "+entity+" failed to load chunk at "+position+" and is in limbo");
+                        continue;
+                    }
 
                     if (add) chunk.addEntity(entity);
                     else chunk.removeEntity(entity);
@@ -82,6 +86,8 @@ public final class World {
 
         kryo = Registry.createKryo();
         kryo.setInstantiatorStrategy(new ComponentInstantiationStrategy());
+
+        chunkProvider.initialize(this);
     }
 
     /** Return chunk at given chunk-coordinates. Chunk is retrieved from ChunkProvider if not loaded.
@@ -187,14 +193,14 @@ public final class World {
         }
     }
 
-    public void update(float rawDelta){
+    public void update(float rawDelta) {
         if(shutdown) throw new IllegalStateException("Illegal update, World is in shutdown");
-        if(rawDelta > MAX_UPDATE_DELTA){
+        if(rawDelta > MAX_UPDATE_DELTA) {
             rawDelta = MAX_UPDATE_DELTA;
         }
 
         tickCountdown -= rawDelta;
-        while(tickCountdown < 0){
+        while(tickCountdown < 0) {
             tickCountdown += TICK_TIME;
             tick();
         }
@@ -239,14 +245,15 @@ public final class World {
     public void shutdown() {
         shutdown = true;
         //Unload all players
-        //TODO
+        entityEngine.getSystem(PlayerSystem.class).unloadAllPlayers();
         entityEngine.update(0f);
         //Unload everything
         entityEngine.getSystem(ChunkLoadingSystem.class).shutdown();
         entityEngine.update(0f);//Flush entity unloads
         //Save remaining entities (entities without a place)
         //TODO
-
+        //Shutdown
+        chunkProvider.shutdown();
     }
 
     /** Result of block ray-casting methods. */
