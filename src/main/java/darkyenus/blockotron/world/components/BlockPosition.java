@@ -1,6 +1,7 @@
 package darkyenus.blockotron.world.components;
 
 import com.github.antag99.retinazer.Component;
+import darkyenus.blockotron.world.Dimensions;
 
 /**
  * Position of block entity.
@@ -18,4 +19,16 @@ public final class BlockPosition implements Component.Pooled {
     /** World block coordinates of this entity.
      * DO NOT CHANGE MANUALLY, ONLY THROUGH METHODS PROVIDED BY {@link darkyenus.blockotron.world.World}! */
     public int x, y, z;
+
+    public int getChunkX() {
+        return Dimensions.worldToChunk(x);
+    }
+
+    public int getChunkY() {
+        return Dimensions.worldToChunk(y);
+    }
+
+    public int getChunkZ() {
+        return Dimensions.worldToChunk(z);
+    }
 }

@@ -6,9 +6,11 @@ import com.badlogic.gdx.utils.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.github.antag99.retinazer.*;
 import darkyenus.blockotron.utils.BoundingBox;
+import darkyenus.blockotron.utils.EntityListenerAdapter;
 import darkyenus.blockotron.utils.RayCast;
 import darkyenus.blockotron.utils.SelectionWireResolver;
 import darkyenus.blockotron.world.blocks.Air;
+import darkyenus.blockotron.world.components.BlockPosition;
 import darkyenus.blockotron.world.components.Position;
 import darkyenus.blockotron.world.systems.ChunkLoadingSystem;
 import darkyenus.blockotron.world.systems.PlayerSystem;
@@ -46,43 +48,71 @@ public final class World {
         final Engine engine = new Engine(engineConfig);
         entityEngine = engine;
 
-        final EntityListener chunkPositionMapper = new EntityListener() {
+        final EntityListenerAdapter positionListener = new EntityListenerAdapter(){
 
             private @Wire Mapper<Position> positionMapper;
 
             @Override
-            public void inserted(EntitySet entities) {
-                process(entities, true);
+            protected void inserted(int entity) {
+                final Position position = positionMapper.get(entity);
+
+                final Chunk chunk = loadChunk(position.getChunkX(), position.getChunkY(), position.getClampedChunkZ());
+                if (chunk == null) {
+                    Gdx.app.error("PositionListener","New entity "+entity+" failed to load chunk at "+position+" and is in limbo");
+                    return;
+                }
+
+                chunk.addEntity(entity);
             }
 
             @Override
-            public void removed(EntitySet entities) {
-                process(entities, false);
-            }
+            protected void removed(int entity) {
+                final Position position = positionMapper.get(entity);
 
-            private void process(EntitySet entitySet, boolean add){
-                final IntArray indices = entitySet.getIndices();
-                final int[] entities = indices.items;
-                final int size = indices.size;
-
-                for (int i = 0; i < size; i++) {
-                    final int entity = entities[i];
-
-                    final Position position = positionMapper.get(entity);
-
-                    final Chunk chunk = loadChunk(position.getChunkX(), position.getChunkY(), position.getClampedChunkZ());
-                    if (chunk == null) {
-                        Gdx.app.error("PositionListener","New entity "+entity+" failed to load chunk at "+position+" and is in limbo");
-                        continue;
-                    }
-
-                    if (add) chunk.addEntity(entity);
-                    else chunk.removeEntity(entity);
+                final Chunk chunk = loadChunk(position.getChunkX(), position.getChunkY(), position.getClampedChunkZ());
+                if (chunk == null) {
+                    Gdx.app.error("PositionListener","New entity "+entity+" failed to load chunk at "+position+" and is in limbo");
+                    return;
                 }
+
+                chunk.removeEntity(entity);
             }
         };
-        engine.wire(chunkPositionMapper);
-        engine.getFamily(Family.with(Position.class)).addListener(chunkPositionMapper);
+        engine.wire(positionListener);
+        engine.getFamily(Family.with(Position.class)).addListener(positionListener);
+
+        final EntityListenerAdapter blockPositionListener = new EntityListenerAdapter(){
+
+            private @Wire Mapper<BlockPosition> positionMapper;
+
+            @Override
+            protected void inserted(int entity) {
+                final BlockPosition position = positionMapper.get(entity);
+
+                final Chunk chunk = loadChunk(position.getChunkX(), position.getChunkY(), position.getChunkZ());
+                if (chunk == null) {
+                    Gdx.app.error("PositionListener","New entity "+entity+" failed to load chunk at "+position+" and is in limbo");
+                    return;
+                }
+
+                chunk.setBlockEntity(entity, inChunkKey(position.getChunkX(), position.getChunkY(), position.getChunkZ()));
+            }
+
+            @Override
+            protected void removed(int entity) {
+                final BlockPosition position = positionMapper.get(entity);
+
+                final Chunk chunk = loadChunk(position.getChunkX(), position.getChunkY(), position.getChunkZ());
+                if (chunk == null) {
+                    Gdx.app.error("PositionListener","New entity "+entity+" failed to load chunk at "+position+" and is in limbo");
+                    return;
+                }
+
+                chunk.removeBlockEntity(inChunkKey(position.getChunkX(), position.getChunkY(), position.getChunkZ()));
+            }
+        };
+        engine.wire(blockPositionListener);
+        engine.getFamily(Family.with(BlockPosition.class)).addListener(blockPositionListener);
 
         kryo = Registry.createKryo();
         kryo.setInstantiatorStrategy(new ComponentInstantiationStrategy());

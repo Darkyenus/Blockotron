@@ -327,6 +327,14 @@ public final class Chunk {
         return entities.removeValue(entity);
     }
 
+    void setBlockEntity(int entity, int inChunkKey){
+        blockEntities.put(inChunkKey, entity);
+    }
+
+    void removeBlockEntity(int inChunkKey){
+        blockEntities.remove(inChunkKey, -1);
+    }
+
     /** Get the list of all non-block entities on this chunk. Do not modify, use for iteration only. */
     public IntArray entities() {
         return entities;
