@@ -9,6 +9,8 @@ import darkyenus.blockotron.world.Block;
 import darkyenus.blockotron.world.Side;
 import darkyenus.blockotron.world.World;
 
+import static darkyenus.blockotron.render.RectangleMeshBatch.white;
+
 /**
  *
  */
@@ -27,14 +29,14 @@ public class Flowerpot extends Block {
 	@Override
 	public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, int skyLight, int blockLight, RectangleMeshBatch batch) {
 		// All but bottom faces are always drawn
-		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.TOP_FACE_OFFSETS, TOP, 0.5f, 0.5f, 0.5f);
-		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.EAST_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f);
-		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.WEST_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f);
-		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.NORTH_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f);
-		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.SOUTH_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f);
+		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.TOP_FACE_OFFSETS, TOP, 0.5f, 0.5f, 0.5f, white, white, white, white);
+		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.EAST_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f, white, white, white, white);
+		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.WEST_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f, white, white, white, white);
+		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.NORTH_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f, white, white, white, white);
+		batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.SOUTH_FACE_OFFSETS, SIDE, 0.5f, 0.5f, 0.5f, white, white, white, white);
 		if ((occlusion & Side.bottom) != 0) {
 			batch.createBlockFace(drawX + 0.25f, drawY + 0.25f, drawZ, RectangleMeshBatch.BOTTOM_FACE_OFFSETS, BOTTOM,
-                    0.5f, 0.5f, 0.5f);
+                    0.5f, 0.5f, 0.5f, white, white, white, white);
 		}
 	}
 }

@@ -28,7 +28,7 @@ public class RectangleMeshBatch implements RenderableProvider {
             VertexAttribute.ColorPacked()//1
     );
     private final static int vertexSize = 6;
-    private final static float white = Color.WHITE.toFloatBits();
+    public final static float white = Color.WHITE.toFloatBits();
 
     private final Material opaqueMaterial, transparentMaterial;
     private final Vector3 worldTranslation = new Vector3();
@@ -151,22 +151,75 @@ public class RectangleMeshBatch implements RenderableProvider {
      *                 (see {@link darkyenus.blockotron.world.Chunk#getOcclusionMask(int, int, int)})
      * @param texture of all faces */
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture texture) {
-        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, texture);
-        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, texture);
-        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, texture);
-        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, texture);
-        if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, texture);
-        if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, texture);
+        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, texture, white, white, white, white);
+        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, texture, white, white, white, white);
+        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, texture, white, white, white, white);
+        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, texture, white, white, white, white);
+        if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, texture, white, white, white, white);
+        if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, texture, white, white, white, white);
     }
 
     /** @see #createBlock(int, int, int, byte, BlockFaceTexture) */
     public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture top, BlockFaceTexture sides, BlockFaceTexture bottom) {
-        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, sides);
-        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, sides);
-        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, sides);
-        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, sides);
-        if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, top);
-        if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, bottom);
+        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, sides, white, white, white, white);
+        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, sides, white, white, white, white);
+        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, sides, white, white, white, white);
+        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, sides, white, white, white, white);
+        if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, top, white, white, white, white);
+        if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, bottom, white, white, white, white);
+    }
+
+    private static final float[] colorMatrix = new float[16*16];
+    static {
+        final float[] colors = colorMatrix;
+        final Color NO_SKY = new Color(0f, 0f, 0.3f, 1f);
+        final Color ALL_SKY = Color.WHITE;
+        final Color TMP = new Color();
+
+        for (int sky = 0; sky < 16; sky++) {
+            for (int block = 0; block < 16; block++) {
+                TMP.set(NO_SKY).lerp(ALL_SKY, sky / 15f);
+                colors[sky | (block << 4)] = TMP.toFloatBits();
+            }
+        }
+    }
+
+    /** @see #createBlock(int, int, int, byte, BlockFaceTexture) */
+    public void createBlock (int x, int y, int z, byte faceMask, int skyColor, int blockColor, BlockFaceTexture east, BlockFaceTexture west, BlockFaceTexture north, BlockFaceTexture south, BlockFaceTexture top, BlockFaceTexture bottom) {
+        if((faceMask & Side.east) != 0) {
+            final float eastColor = colorMatrix[skyColor & 0xFF];
+            createBlockFace(x, y, z, EAST_FACE_OFFSETS, east, eastColor, eastColor, eastColor, eastColor);
+        }
+        if((faceMask & Side.west) != 0) {
+            final float westColor = colorMatrix[(skyColor >> 4) & 0xFF];
+            createBlockFace(x, y, z, WEST_FACE_OFFSETS, west, westColor, westColor, westColor, westColor);
+        }
+        if((faceMask & Side.north) != 0) {
+            final float northColor = colorMatrix[(skyColor >> 8) & 0xFF];
+            createBlockFace(x, y, z, NORTH_FACE_OFFSETS, north, northColor, northColor, northColor, northColor);
+        }
+        if((faceMask & Side.south) != 0) {
+            final float southColor = colorMatrix[(skyColor >> 12) & 0xFF];
+            createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, south, southColor, southColor, southColor, southColor);
+        }
+        if((faceMask & Side.top) != 0) {
+            final float topColor = colorMatrix[(skyColor >> 16) & 0xFF];
+            createBlockFace(x, y, z, TOP_FACE_OFFSETS, top, topColor, topColor, topColor, topColor);
+        }
+        if((faceMask & Side.bottom) != 0) {
+            final float bottomColor = colorMatrix[(skyColor >> 20) & 0xFF];
+            createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, bottom, bottomColor, bottomColor, bottomColor, bottomColor);
+        }
+    }
+
+    /** @see #createBlock(int, int, int, byte, BlockFaceTexture) */
+    public void createBlock (int x, int y, int z, byte faceMask, BlockFaceTexture east, float eastColor, BlockFaceTexture west, float westColor, BlockFaceTexture north, float northColor, BlockFaceTexture south, float southColor, BlockFaceTexture top, float topColor, BlockFaceTexture bottom, float bottomColor) {
+        if((faceMask & Side.east) != 0) createBlockFace(x, y, z, EAST_FACE_OFFSETS, east, eastColor, eastColor, eastColor, eastColor);
+        if((faceMask & Side.west) != 0) createBlockFace(x, y, z, WEST_FACE_OFFSETS, west, westColor, westColor, westColor, westColor);
+        if((faceMask & Side.north) != 0) createBlockFace(x, y, z, NORTH_FACE_OFFSETS, north, northColor, northColor, northColor, northColor);
+        if((faceMask & Side.south) != 0) createBlockFace(x, y, z, SOUTH_FACE_OFFSETS, south, southColor, southColor, southColor, southColor);
+        if((faceMask & Side.top) != 0) createBlockFace(x, y, z, TOP_FACE_OFFSETS, top, topColor, topColor, topColor, topColor);
+        if((faceMask & Side.bottom) != 0) createBlockFace(x, y, z, BOTTOM_FACE_OFFSETS, bottom, bottomColor, bottomColor, bottomColor, bottomColor);
     }
 
     /** Draw a single face of a block. Most blocks should use one of createBlock() methods.
@@ -174,7 +227,7 @@ public class RectangleMeshBatch implements RenderableProvider {
      * @param x (+ y,z) world coordinates of the block
      * @param faceOffsets offsets of the face vertices to the block origin (see {@link #TOP_FACE_OFFSETS} etc.)
      * @param texture to be drawn on the face */
-    public void createBlockFace (int x, int y, int z, float[] faceOffsets, BlockFaceTexture texture){
+    public void createBlockFace (int x, int y, int z, float[] faceOffsets, BlockFaceTexture texture, float color1, float color2, float color3, float color4){
         if(opaqueFaces + transparentFaces + 1 > maxMeshFaces){
             resizeMesh(opaqueFaces + transparentFaces + 1);
         }
@@ -201,28 +254,28 @@ public class RectangleMeshBatch implements RenderableProvider {
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v2;
-        v[vertexOffset++] = white;
+        v[vertexOffset++] = color1;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v;
-        v[vertexOffset++] = white;
+        v[vertexOffset++] = color2;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
         v[vertexOffset++] = texture.u;
         v[vertexOffset++] = texture.v;
-        v[vertexOffset++] = white;
+        v[vertexOffset++] = color3;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset];
         v[vertexOffset++] = texture.u;
         v[vertexOffset++] = texture.v2;
-        v[vertexOffset] = white;
+        v[vertexOffset] = color4;
     }
 
     /** Draw a single face of a block. Advanced parameters.
@@ -232,7 +285,7 @@ public class RectangleMeshBatch implements RenderableProvider {
      * @param texture to be drawn on the face
      * @param sclX (+ sclY, sclZ) scale of the face offsets */
     public void createBlockFace (float x, float y, float z, float[] faceOffsets, BlockFaceTexture texture,
-                                 float sclX, float sclY, float sclZ){
+                                 float sclX, float sclY, float sclZ, float color1, float color2, float color3, float color4){
         if(opaqueFaces + transparentFaces + 1 > maxMeshFaces){
             resizeMesh(opaqueFaces + transparentFaces + 1);
         }
@@ -259,28 +312,28 @@ public class RectangleMeshBatch implements RenderableProvider {
         v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v2;
-        v[vertexOffset++] = white;
+        v[vertexOffset++] = color1;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
         v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
         v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v;
-        v[vertexOffset++] = white;
+        v[vertexOffset++] = color2;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
         v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
         v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
         v[vertexOffset++] = texture.u;
         v[vertexOffset++] = texture.v;
-        v[vertexOffset++] = white;
+        v[vertexOffset++] = color3;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
         v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
         v[vertexOffset++] = z + faceOffsets[faceOffset] * sclZ;
         v[vertexOffset++] = texture.u;
         v[vertexOffset++] = texture.v2;
-        v[vertexOffset] = white;
+        v[vertexOffset] = color4;
     }
 
     /** Update the mesh and end the edit block. */

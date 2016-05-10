@@ -249,7 +249,7 @@ public final class PersistentGeneratorChunkProvider implements ChunkProvider {
             if (validInChunkCoordinate(inChunkX) && validInChunkCoordinate(inChunkY)) {
                 getChunk(chunkZ).setLocalBlock(inChunkX, inChunkY, inChunkZ, block);
             } else if (populated) {
-                getGeneratedColumn(chunkX + ((inChunkX & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT), chunkY + ((inChunkY & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT))
+                getGeneratedColumn(chunkX + (inChunkX >> CHUNK_SIZE_SHIFT), chunkY + (inChunkY >> CHUNK_SIZE_SHIFT))
                         .getChunk(chunkZ)
                         .setLocalBlock(inChunkX & CHUNK_SIZE_MASK, inChunkY & CHUNK_SIZE_MASK, inChunkZ, block);
             } else {
@@ -268,7 +268,7 @@ public final class PersistentGeneratorChunkProvider implements ChunkProvider {
             if (validInChunkCoordinate(inChunkX) && validInChunkCoordinate(inChunkY)) {
                 chunk = getChunk(chunkZ);
             } else if (populated) {
-                chunk = getGeneratedColumn(chunkX + ((inChunkX & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT), chunkY + ((inChunkY & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT))
+                chunk = getGeneratedColumn(chunkX + (inChunkX >> CHUNK_SIZE_SHIFT), chunkY + (inChunkY >> CHUNK_SIZE_SHIFT))
                         .getChunk(chunkZ);
                 inChunkX &= CHUNK_SIZE_MASK;
                 inChunkY &= CHUNK_SIZE_MASK;
@@ -319,7 +319,7 @@ public final class PersistentGeneratorChunkProvider implements ChunkProvider {
             if (validInChunkCoordinate(inColumnX) && validInChunkCoordinate(inColumnY)) {
                 return getChunk(chunkZ).getLocalBlock(inColumnX, inColumnY, inChunkZ);
             } else if (populated) {
-                return getGeneratedColumn(chunkX + ((inColumnX & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT), chunkY + ((inColumnY & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT))
+                return getGeneratedColumn(chunkX + (inColumnX >> CHUNK_SIZE_SHIFT), chunkY + (inColumnY >> CHUNK_SIZE_SHIFT))
                         .getChunk(chunkZ)
                         .getLocalBlock(inColumnX & CHUNK_SIZE_MASK, inColumnY & CHUNK_SIZE_MASK, inChunkZ);
             } else {

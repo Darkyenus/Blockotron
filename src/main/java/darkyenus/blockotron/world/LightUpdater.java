@@ -1,6 +1,7 @@
 package darkyenus.blockotron.world;
 
 import com.badlogic.gdx.utils.IntArray;
+import com.badlogic.gdx.utils.Pool;
 import darkyenus.blockotron.world.blocks.Air;
 
 import static darkyenus.blockotron.world.Dimensions.*;
@@ -9,9 +10,13 @@ import static darkyenus.blockotron.world.Dimensions.*;
  *
  */
 final class LightUpdater {
-    private final Chunk[] chunks = new Chunk[9];
-    private final byte[][] lights = new byte[9][];
+    private static final int CHUNK_COUNT = 3*3*3;
+    private static final int BLOCK_COUNT = 3*CHUNK_SIZE;
+
+    private final Chunk[] chunks = new Chunk[CHUNK_COUNT];
+    private final byte[][] lights = new byte[CHUNK_COUNT][];
     private final IntArray updateStack = new IntArray(false, 512);
+    private boolean updateChunkBelow = false;
 
     private static final int MASK = 0b11_1111;
     private static final int SHIFT = 6;
@@ -21,8 +26,23 @@ final class LightUpdater {
     private static final int Y = 3;
     private static final int Z = 9;
 
+    private LightUpdater() {
+    }
+
+    public static void updateChunk(Chunk chunk){
+        final LightUpdater updater = LIGHT_UPDATER_POOL.obtain();
+        updater.update(chunk);
+        LIGHT_UPDATER_POOL.free(updater);
+    }
+
+    public static void updateChunk(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ){
+        final LightUpdater updater = LIGHT_UPDATER_POOL.obtain();
+        updater.update(chunk, inChunkX, inChunkY, inChunkZ);
+        LIGHT_UPDATER_POOL.free(updater);
+    }
+
     /** Entry point, updates the whole chunk */
-    public void update(Chunk chunk){
+    private void update(Chunk chunk){
         setup(chunk);
         for (int x = CHUNK_SIZE; x < CHUNK_SIZE + CHUNK_SIZE; x++) {
             for (int y = CHUNK_SIZE; y < CHUNK_SIZE + CHUNK_SIZE; y++) {
@@ -32,12 +52,23 @@ final class LightUpdater {
         process();
     }
 
+    private void update(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ){
+        setup(chunk);
+        queue(CHUNK_SIZE + inChunkX, CHUNK_SIZE + inChunkY, CHUNK_SIZE + inChunkZ);
+        process();
+    }
+
     private void queue(int x, int y, int z){
-        if(x < 0 || x >= 9*3 || y < 0 || y >= 9*3 || z < 0 || z >= 9*3) return;
+        if(x < 0 || x >= BLOCK_COUNT || y < 0 || y >= BLOCK_COUNT || z >= BLOCK_COUNT) return;
+        if(z < 0){
+            updateChunkBelow = true;
+            return;
+        }
         updateStack.add(((x & MASK) << (SHIFT + SHIFT)) | ((y & MASK) << (SHIFT)) | (z & MASK));
     }
 
     private void setup(Chunk center) {
+        updateChunkBelow = false;
         updateStack.clear();
         for (int xO = -1; xO <= 1; xO++) {
             for (int yO = -1; yO <= 1; yO++) {
@@ -45,27 +76,30 @@ final class LightUpdater {
                     final Chunk loadedChunk = center.world.getLoadedChunk(center.x + xO, center.y + yO, center.z + zO);
                     final int key = CENTER + xO * X + yO * Y + zO * Z;
                     chunks[key] = loadedChunk;
-                    lights[key] = loadedChunk == null ? null : loadedChunk.light;
+                    lights[key] = loadedChunk == null ? null : loadedChunk.getLight();
                 }
             }
         }
     }
 
+    private int chunkKey(int x, int y, int z){
+        return CENTER + ((x-CHUNK_SIZE) >> CHUNK_SIZE_SHIFT) * X
+                + ((y-CHUNK_SIZE) >> CHUNK_SIZE_SHIFT) * Y
+                + ((z-CHUNK_SIZE) >> CHUNK_SIZE_SHIFT) * Z;
+    }
+
     private byte lightValue(int x, int y, int z, byte def){
-        final int chunkKey = CENTER + ((x & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * X
-                + ((y & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * Y
-                + ((z & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * Z;
-        if(chunkKey < 0 || chunkKey >= 9)return def;
+        final int chunkKey = chunkKey(x, y, z);
+        if(chunkKey < 0 || chunkKey >= CHUNK_COUNT) return def;
+
         final byte[] light = lights[chunkKey];
         if(light == null) return def;
         else return light[inChunkKey(x, y, z)];
     }
 
     private Block block(int x, int y, int z){
-        final int chunkKey = CENTER + ((x & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * X
-                + ((y & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * Y
-                + ((z & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * Z;
-        if(chunkKey < 0 || chunkKey >= 9)return Air.AIR;
+        final int chunkKey = chunkKey(x, y, z);
+        if(chunkKey < 0 || chunkKey >= CHUNK_COUNT) return Air.AIR;
 
         final Chunk chunk = chunks[chunkKey];
         if(chunk == null) return Air.AIR;
@@ -77,10 +111,9 @@ final class LightUpdater {
     }
 
     private void setLightValue(int x, int y, int z, byte lightValue){
-        final int chunkKey = CENTER + ((x & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * X
-                + ((y & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * Y
-                + ((z & ~CHUNK_SIZE_MASK) >> CHUNK_SIZE_SHIFT) * Z;
-        if(chunkKey < 0 || chunkKey >= 9)return;
+        final int chunkKey = chunkKey(x, y, z);
+        if(chunkKey < 0 || chunkKey >= CHUNK_COUNT) return;
+
         final byte[] light = lights[chunkKey];
         if(light == null) return;
         final int key = inChunkKey(x, y, z);
@@ -136,7 +169,20 @@ final class LightUpdater {
             } else {
                 setLightValue(x, y, z, (byte)0);
             }
+        }
 
+        if(updateChunkBelow){
+            final Chunk below = chunks[CENTER - Z];
+            if(below != null){
+                update(below);
+            }
         }
     }
+
+    private static final Pool<LightUpdater> LIGHT_UPDATER_POOL = new Pool<LightUpdater>() {
+        @Override
+        protected LightUpdater newObject() {
+            return new LightUpdater();
+        }
+    };
 }

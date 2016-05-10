@@ -229,6 +229,11 @@ public final class Chunk {
         updateOcclusion(x, y, z-1);
         updateOcclusion(x, y, z+1);
 
+        // Update light
+        if(lightSettled){
+            LightUpdater.updateChunk(this, x, y, z);
+        }
+
         for (WorldObserver observer : world.observers()) {
             observer.blockChanged(this, x, y, z, old, block);
         }
@@ -322,14 +327,27 @@ public final class Chunk {
         }
     }
 
+    public byte getLight(int inChunkX, int inChunkY, int inChunkZ){
+        if((inChunkX & CHUNK_SIZE_MASK) == inChunkX && (inChunkY & CHUNK_SIZE_MASK) == inChunkY && (inChunkZ & CHUNK_SIZE_MASK) == inChunkZ){
+            return getLight()[inChunkKey(inChunkX, inChunkY, inChunkZ)];
+        } else {
+            final int xOff = inChunkX >> CHUNK_SIZE_SHIFT;
+            final int yOff = inChunkY >> CHUNK_SIZE_SHIFT;
+            final int zOff = inChunkZ >> CHUNK_SIZE_SHIFT;
+            final Chunk loadedChunk = world.getLoadedChunk(this.x + xOff, this.y + yOff, this.z + zOff);
+            if(loadedChunk == null) return -1;
+            else return loadedChunk.getLight()[inChunkKey(inChunkX, inChunkY, inChunkZ)];
+        }
+    }
+
     public byte[] getLight() {
         final byte[] light = this.light;
-        if (lightSettled) {
+        if (lightSettled || status == STATUS_POPULATING) {
             return light;
         } else {
             //Update light
             lightSettled = true;
-            new LightUpdater().update(this);
+            LightUpdater.updateChunk(this);
             return light;
         }
     }

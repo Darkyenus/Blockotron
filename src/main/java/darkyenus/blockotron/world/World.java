@@ -241,7 +241,7 @@ public final class World {
     private void tick(){
         //Block tick
         for (Chunk chunk : chunks.values()) {
-            chunk.tick();
+            //chunk.tick();//TODO QQQ UNCOMMENT
         }
     }
 

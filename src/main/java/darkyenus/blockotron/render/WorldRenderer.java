@@ -168,6 +168,7 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
                 this.dirty = false;
 
                 blockBatch.begin();
+                final Chunk chunk = this.chunk;
                 if(!chunk.isEmpty()){
                     final World world = chunk.world;
                     final int worldX = chunk.x << CHUNK_SIZE_SHIFT;
@@ -185,14 +186,31 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
                         if (block != Air.AIR) {
                             final int cX = i & 0xF;
                             final int cY = (i >> 4) & 0xF;
-                            final int cZ = (i >> 8) & 0xFF;
+                            final int cZ = (i >> 8) & 0xF;
+
+                            final byte eastLight = chunk.getLight(cX+1, cY, cZ);
+                            final byte westLight = chunk.getLight(cX-1, cY, cZ);
+                            final byte northLight = chunk.getLight(cX, cY+1, cZ);
+                            final byte southLight = chunk.getLight(cX, cY-1, cZ);
+                            final byte topLight = chunk.getLight(cX, cY, cZ+1);
+                            final byte bottomLight = chunk.getLight(cX, cY, cZ-1);
+                            final byte selfLight = chunk.getLight(cX, cY, cZ);
+
+                            final int skyLight = (eastLight & 0xF) | ((westLight & 0xF) << 4)
+                                    | ((northLight & 0xF) << 8) | ((southLight & 0xF) << 12)
+                                    | ((topLight & 0xF) << 16) | ((bottomLight & 0xF) << 20)
+                                    | ((selfLight & 0xF) << 24);
+                            final int blockLight = ((eastLight & 0xF0) >> 4) | ((westLight & 0xF0))
+                                    | ((northLight & 0xF0) << 4) | ((southLight & 0xF0) << 8)
+                                    | ((topLight & 0xF0) << 12) | ((bottomLight & 0xF0) << 16)
+                                    | ((selfLight & 0xF0) << 20);
 
                             if(block.isTransparent()) {
                                 blockBatch.resumeTransparent();
-                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], -1, -1, blockBatch);
+                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], skyLight, blockLight, blockBatch);
                                 blockBatch.pauseTransparent();
                             } else {
-                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], -1, -1, blockBatch);
+                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], skyLight, blockLight, blockBatch);
                             }
                         }
                     }
