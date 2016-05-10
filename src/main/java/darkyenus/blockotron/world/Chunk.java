@@ -35,6 +35,11 @@ public final class Chunk {
      * Byte holds flags from {@link Side}
      * <br/>WARNING: DIRECT USE EXPERT ONLY, DO NOT MODIFY */
     public final byte[] occlusion = new byte[blocks.length];
+    /** Indexing identical to of {@link #blocks}.
+     * For each block, contains its light levels, packed: first (msb) 4 bits for block light, last (lsb) 4 bits for sky light. */
+    final byte[] light = new byte[blocks.length];
+    /** True if the light[] contains valid values, false if not yet computed */
+    private boolean lightSettled = false;
 
     /** IDs of entities with {@link darkyenus.blockotron.world.components.Position} on this chunk */
     private final IntArray entities = new IntArray(false, 64);
@@ -75,9 +80,11 @@ public final class Chunk {
 		if (status != STATUS_POPULATING) throw new AssertionError("Chunk must be populating, is " + status);
 		status = STATUS_INACTIVE;
 
-		int nonAirBlockCount = 0;
-		for (int key = 0; key < blocks.length; key++) {
-			Block block = blocks[key];
+        final Block[] blocks = this.blocks;
+
+        int nonAirBlockCount = 0;
+        for (int key = 0; key < blocks.length; key++) {
+            Block block = blocks[key];
 			if (block != Air.AIR) {
 				nonAirBlockCount++;
 				final int x = inChunkKeyToX(key);
@@ -99,6 +106,7 @@ public final class Chunk {
 		// Deserialize or create entities
 		if (entityStorage == null) {
 			// Block entities never created
+            final Block[] blocks = this.blocks;
 			for (int key = 0; key < blocks.length; key++) {
 				Block block = blocks[key];
 				if (block.hasEntity()) {
@@ -311,6 +319,18 @@ public final class Chunk {
                 iterator.block(i & 0xF, (i >> 4) & 0xF, (i >> 8) & 0xFF, occlusion[i], block);
                 nonAirRemaining--;
             }
+        }
+    }
+
+    public byte[] getLight() {
+        final byte[] light = this.light;
+        if (lightSettled) {
+            return light;
+        } else {
+            //Update light
+            lightSettled = true;
+            new LightUpdater().update(this);
+            return light;
         }
     }
 

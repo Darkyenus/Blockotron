@@ -189,10 +189,10 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
                             if(block.isTransparent()) {
                                 blockBatch.resumeTransparent();
-                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
+                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], -1, -1, blockBatch);
                                 blockBatch.pauseTransparent();
                             } else {
-                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], blockBatch);
+                                block.render(world, worldX + cX, worldY + cY, worldZ + cZ, cX, cY, cZ, occlusion[i], -1, -1, blockBatch);
                             }
                         }
                     }

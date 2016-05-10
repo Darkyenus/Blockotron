@@ -20,7 +20,7 @@ public class DebugBlock extends Block {
     }
 
     @Override
-    public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {
+    public void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, int skyLight, int blockLight, RectangleMeshBatch batch) {
         batch.createBlock(drawX, drawY, drawZ, (byte)~0, texture);
     }
 }

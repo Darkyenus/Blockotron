@@ -89,9 +89,11 @@ public abstract class Block {
 	 * @param x (y, z) of the block in the world
 	 * @param drawX (drawY, drawZ) to pass to the batch
 	 * @param occlusion mask of the block. Can be passed directly to the batch. See {@link Chunk#getOcclusionMask(int, int, int)}
-	 * @param batch to be used for drawing */
-	public abstract void render (World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion,
-		RectangleMeshBatch batch);
+	 * @param skyLight light levels from the sky, packed in groups of 4 bits, from lsb in Side order
+	 * @param blockLight light levels from blocks (see skyLight)
+	 * @param batch to be used for drawing    */
+	public abstract void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion,
+								int skyLight, int blockLight, RectangleMeshBatch batch);
 
 	public void randomTick(World world, int worldX, int worldY, int worldZ){}
 

@@ -21,7 +21,7 @@ public class SimpleBlock extends Block {
     }
 
     @Override
-    public final void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, RectangleMeshBatch batch) {
+    public final void render(World world, int x, int y, int z, int drawX, int drawY, int drawZ, byte occlusion, int skyLight, int blockLight, RectangleMeshBatch batch) {
         batch.createBlock(drawX, drawY, drawZ, occlusion, top, sides, bottom);
     }
 

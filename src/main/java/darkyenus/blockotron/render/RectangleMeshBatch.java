@@ -1,9 +1,6 @@
 package darkyenus.blockotron.render;
 
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.VertexAttribute;
-import com.badlogic.gdx.graphics.VertexAttributes;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
@@ -27,9 +24,11 @@ public class RectangleMeshBatch implements RenderableProvider {
 
     private final static VertexAttributes attributes = new VertexAttributes(
             VertexAttribute.Position(),//3
-            VertexAttribute.TexCoords(0)//2
+            VertexAttribute.TexCoords(0),//2
+            VertexAttribute.ColorPacked()//1
     );
-    private final static int vertexSize = 5;
+    private final static int vertexSize = 6;
+    private final static float white = Color.WHITE.toFloatBits();
 
     private final Material opaqueMaterial, transparentMaterial;
     private final Vector3 worldTranslation = new Vector3();
@@ -202,24 +201,28 @@ public class RectangleMeshBatch implements RenderableProvider {
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v2;
+        v[vertexOffset++] = white;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v;
+        v[vertexOffset++] = white;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset++];
         v[vertexOffset++] = texture.u;
         v[vertexOffset++] = texture.v;
+        v[vertexOffset++] = white;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++];
         v[vertexOffset++] = y + faceOffsets[faceOffset++];
         v[vertexOffset++] = z + faceOffsets[faceOffset];
         v[vertexOffset++] = texture.u;
-        v[vertexOffset] = texture.v2;
+        v[vertexOffset++] = texture.v2;
+        v[vertexOffset] = white;
     }
 
     /** Draw a single face of a block. Advanced parameters.
@@ -256,24 +259,28 @@ public class RectangleMeshBatch implements RenderableProvider {
         v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v2;
+        v[vertexOffset++] = white;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
         v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
         v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
         v[vertexOffset++] = texture.u2;
         v[vertexOffset++] = texture.v;
+        v[vertexOffset++] = white;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
         v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
         v[vertexOffset++] = z + faceOffsets[faceOffset++] * sclZ;
         v[vertexOffset++] = texture.u;
         v[vertexOffset++] = texture.v;
+        v[vertexOffset++] = white;
 
         v[vertexOffset++] = x + faceOffsets[faceOffset++] * sclX;
         v[vertexOffset++] = y + faceOffsets[faceOffset++] * sclY;
         v[vertexOffset++] = z + faceOffsets[faceOffset] * sclZ;
         v[vertexOffset++] = texture.u;
-        v[vertexOffset] = texture.v2;
+        v[vertexOffset++] = texture.v2;
+        v[vertexOffset] = white;
     }
 
     /** Update the mesh and end the edit block. */
