@@ -112,7 +112,6 @@ public final class Chunk {
 					blockPosition.y = this.y << CHUNK_SIZE_SHIFT + y;
 					blockPosition.z = this.z << CHUNK_SIZE_SHIFT + z;
 					block.initializeEntity(world, entity);
-					blockEntities.put(key, entity);
 				}
 			}
 		} else {
@@ -189,7 +188,7 @@ public final class Chunk {
 		// Remove old block entity
 		final Engine entityEngine = world.entityEngine();
 		if (old.hasEntity()) {
-            final int removed = blockEntities.remove(coord, -1);
+            final int removed = blockEntities.get(coord, -1);
             assert removed != -1 : "Block " + block + " didn't have associated entity even though it should have.";
             entityEngine.destroyEntity(removed);
 		}
@@ -202,7 +201,6 @@ public final class Chunk {
             blockPosition.y = this.y << CHUNK_SIZE_SHIFT + y;
             blockPosition.z = this.z << CHUNK_SIZE_SHIFT + z;
             block.initializeEntity(world, entity);
-            blockEntities.put(coord, entity);
 		}
 
         //Update iterator hints
