@@ -184,6 +184,32 @@ public final class Chunk {
      * If chunk is loaded, notifies world about the change. */
     public void setLocalBlock(int x, int y, int z, Block block) {
         if(status == STATUS_INACTIVE) throw new IllegalStateException("Do not modify inactive chunk");
+        //TODO This triggered, stacktrace below
+        /*
+        at darkyenus.blockotron.world.Chunk.setLocalBlock(Chunk.java:186)
+	at darkyenus.blockotron.world.generator.PersistentGeneratorChunkProvider$ChunkColumn.setBlockIfAir(PersistentGeneratorChunkProvider.java:281)
+	at darkyenus.blockotron.world.generator.populators.TreePopulator.spawnTree(TreePopulator.java:33)
+	at darkyenus.blockotron.world.generator.populators.TreePopulator.populateColumn(TreePopulator.java:23)
+	at darkyenus.blockotron.world.generator.PersistentGeneratorChunkProvider.populateColumn(PersistentGeneratorChunkProvider.java:182)
+	at darkyenus.blockotron.world.generator.PersistentGeneratorChunkProvider.getPopulatedColumn(PersistentGeneratorChunkProvider.java:70)
+	at darkyenus.blockotron.world.generator.PersistentGeneratorChunkProvider.borrowChunk(PersistentGeneratorChunkProvider.java:77)
+	at darkyenus.blockotron.world.World.loadChunk(World.java:130)
+	at darkyenus.blockotron.world.systems.ChunkLoadingSystem$Anchor.add(ChunkLoadingSystem.java:194)
+	at darkyenus.blockotron.world.systems.ChunkLoadingSystem$Anchor.moveTo(ChunkLoadingSystem.java:242)
+	at darkyenus.blockotron.world.systems.ChunkLoadingSystem.process(ChunkLoadingSystem.java:131)
+	at com.github.antag99.retinazer.EntityProcessorSystem.processEntities(EntityProcessorSystem.java:60)
+	at com.github.antag99.retinazer.EntityProcessorSystem.update(EntityProcessorSystem.java:53)
+	at com.github.antag99.retinazer.Engine.update(Engine.java:137)
+	at darkyenus.blockotron.world.World.update(World.java:238)
+	at darkyenus.blockotron.client.GameScreen.update(GameScreen.java:78)
+	at darkyenus.blockotron.client.GameScreen.render(GameScreen.java:72)
+	at com.badlogic.gdx.Game.render(Game.java:46)
+	at com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window.update(Lwjgl3Window.java:235)
+	at com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application.loop(Lwjgl3Application.java:122)
+	at com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application.<init>(Lwjgl3Application.java:95)
+	at darkyenus.blockotron.Blockotron.main(Blockotron.java:56)
+         */
+
 
         final Block[] blocks = this.blocks;
         final int coord = inChunkKey(x, y, z);

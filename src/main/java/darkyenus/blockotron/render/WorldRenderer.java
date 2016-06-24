@@ -93,12 +93,36 @@ public class WorldRenderer implements WorldObserver, RenderableProvider {
 
     @Override
     public void blockChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, Block from, Block to) {
-        renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).dirty = true;
+        makeBlockDirty(chunk, inChunkX, inChunkY, inChunkZ);
     }
 
     @Override
     public void blockOcclusionChanged(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ, byte from, byte to) {
-        renderableChunks.get(chunkKey(chunk.x, chunk.y, chunk.z)).dirty = true;
+        makeBlockDirty(chunk, inChunkX, inChunkY, inChunkZ);
+    }
+
+    private void makeChunkDirty(int chunkX, int chunkY, int chunkZ){
+        final ChunkRenderable renderable = renderableChunks.get(chunkKey(chunkX, chunkY, chunkZ));
+        if(renderable != null) renderable.dirty = true;
+    }
+
+    private void makeBlockDirty(Chunk chunk, int inChunkX, int inChunkY, int inChunkZ){
+        makeChunkDirty(chunk.x, chunk.y, chunk.z);
+        if(inChunkX == 0){
+            makeChunkDirty(chunk.x-1, chunk.y, chunk.z);
+        } else if(inChunkX == CHUNK_SIZE-1){
+            makeChunkDirty(chunk.x+1, chunk.y, chunk.z);
+        }
+        if(inChunkY == 0){
+            makeChunkDirty(chunk.x, chunk.y-1, chunk.z);
+        } else if(inChunkY == CHUNK_SIZE-1){
+            makeChunkDirty(chunk.x, chunk.y+1, chunk.z);
+        }
+        if(inChunkZ == 0){
+            makeChunkDirty(chunk.x, chunk.y, chunk.z-1);
+        } else if(inChunkZ == CHUNK_SIZE-1){
+            makeChunkDirty(chunk.x, chunk.y, chunk.z+1);
+        }
     }
 
     @Override

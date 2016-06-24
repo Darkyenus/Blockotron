@@ -8,19 +8,12 @@ javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-encoding", "UTF-8", "
 
 val gdxVersion = "1.9.2"
 
-lazy val blockotron = project in file(".") dependsOn retinazer
-
-lazy val retinazer = project in file("retinazer") / "retinazer" settings (
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-encoding", "UTF-8", "-g"),
-  libraryDependencies += "com.badlogicgames.gdx" % "gdx" % gdxVersion,
-  libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
-  )
-
 libraryDependencies ++= Seq(
   "com.badlogicgames.gdx" % "gdx" % gdxVersion,
   "com.badlogicgames.gdx" % "gdx-backend-lwjgl3" % gdxVersion,
   "com.badlogicgames.gdx" % "gdx-platform" % gdxVersion classifier "natives-desktop",
-  "com.esotericsoftware" % "kryo" % "3.0.3"
+  "com.esotericsoftware" % "kryo" % "3.0.3",
+  "darkyenus" % "retinazer" % "0.2.2-SNAPSHOT"
 )
 
 autoScalaLibrary := false
